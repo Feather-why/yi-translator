@@ -1,0 +1,112 @@
+{
+  "extension": ".output/ui-test",
+  "fonts": [
+    {
+      "text": "x",
+      "fontId": "g_d0_f5",
+      "name": null,
+      "loadedName": "Times",
+      "italic": true,
+      "bold": false,
+      "fontExtraProperties": false,
+      "style": {
+        "fontFamily": "serif",
+        "ascent": 0.683,
+        "descent": -0.217,
+        "vertical": false
+      },
+      "keys": [
+        "_inspectFont",
+        "attached"
+      ]
+    },
+    {
+      "text": "x",
+      "fontId": "g_d0_f5",
+      "name": null,
+      "loadedName": "Times",
+      "italic": true,
+      "bold": false,
+      "fontExtraProperties": false,
+      "style": {
+        "fontFamily": "serif",
+        "ascent": 0.683,
+        "descent": -0.217,
+        "vertical": false
+      },
+      "keys": [
+        "_inspectFont",
+        "attached"
+      ]
+    },
+    {
+      "text": "Here,",
+      "fontId": "g_d0_f3",
+      "name": null,
+      "loadedName": "Times",
+      "italic": false,
+      "bold": false,
+      "fontExtraProperties": false,
+      "style": {
+        "fontFamily": "serif",
+        "ascent": 0.683,
+        "descent": -0.217,
+        "vertical": false
+      },
+      "keys": [
+        "_inspectFont",
+        "attached"
+      ]
+    },
+    {
+      "text": "N",
+      "fontId": "g_d0_f5",
+      "name": null,
+      "loadedName": "Times",
+      "italic": true,
+      "bold": false,
+      "fontExtraProperties": false,
+      "style": {
+        "fontFamily": "serif",
+        "ascent": 0.683,
+        "descent": -0.217,
+        "vertical": false
+      },
+      "keys": [
+        "_inspectFont",
+        "attached"
+      ]
+    },
+    {
+      "text": "x",
+      "fontId": "g_d0_f5",
+      "name": null,
+      "loadedName": "Times",
+      "italic": true,
+      "bold": false,
+      "fontExtraProperties": false,
+      "style": {
+        "fontFamily": "serif",
+        "ascent": 0.683,
+        "descent": -0.217,
+        "vertical": false
+      },
+      "keys": [
+        "_inspectFont",
+        "attached"
+      ]
+    }
+  ],
+  "before": [
+    {
+      "text": "Here, N is the prediction horizon length and the vector x is the latest state estimate.",
+      "kind": "body"
+    }
+  ],
+  "after": [
+    {
+      "text": "Here, 𝑁 is the prediction horizon length and the vector 𝑥 is the latest state estimate.",
+      "kind": "body"
+    }
+  ]
+}

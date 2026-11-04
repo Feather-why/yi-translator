@@ -1,0 +1,17 @@
+{
+  "extensionName": {
+    "message": "译 · 本地优先的网页翻译"
+  },
+  "extensionDescription": {
+    "message": "整页双语对照、划词小窗、词典；本地模型与多家免费接口自动调度。"
+  },
+  "actionTitle": {
+    "message": "翻译本页（Alt+A）"
+  },
+  "togglePageDescription": {
+    "message": "翻译 / 还原本页"
+  },
+  "translateSelectionDescription": {
+    "message": "翻译选中的文字"
+  }
+}

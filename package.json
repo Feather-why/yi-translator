@@ -1,0 +1,51 @@
+{
+  "name": "translate-ext",
+  "displayName": "译 · 本地优先的网页翻译",
+  "version": "0.2.13",
+  "private": true,
+  "type": "module",
+  "description": "开源、本地优先、快速的浏览器翻译扩展：整页双语对照、划词小窗、词典、综合模式、多免费接口调度、本地/远程模型。",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "zip": "wxt zip",
+    "typecheck": "wxt prepare && tsc --noEmit",
+    "test:e2e": "node gateway/scripts/prepare-assets.mjs && wxt build && node gateway/scripts/check-extension.mjs && node tests/backend/run-e2e.mjs",
+    "postinstall": "wxt prepare",
+    "test:backend": "node tests/contract/run.mjs",
+    "build:test": "wxt build --mode backend-test",
+    "test:backend:browser": "node tests/backend/browser.mjs",
+    "predev": "node gateway/scripts/prepare-assets.mjs",
+    "prebuild": "node gateway/scripts/prepare-assets.mjs",
+    "prebuild:test": "node gateway/scripts/prepare-assets.mjs",
+    "test:align:real": "node tests/backend/align-real-model.mjs",
+    "test:align:browser": "node tests/backend/offscreen-browser.mjs",
+    "test:media:browser": "node tests/backend/media-browser.mjs",
+    "gateway": "node gateway/server.mjs",
+    "test:ui": "node tests/backend/run-ui.mjs",
+    "prezip": "node gateway/scripts/prepare-assets.mjs",
+    "postzip": "node gateway/scripts/check-extension.mjs",
+    "postbuild": "node gateway/scripts/check-extension.mjs",
+    "check:extension": "node gateway/scripts/check-extension.mjs",
+    "verify:release": "node gateway/scripts/verify-release.mjs",
+    "zip:local": "node gateway/scripts/pack-local.mjs",
+    "zip:source": "node gateway/scripts/source-package.mjs"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.3.6",
+    "playwright": "^1.50.0",
+    "typescript": "^5.8.0",
+    "wxt": "^0.21.5"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1",
+    "@paddleocr/paddleocr-js": "0.4.2",
+    "pdfjs-dist": "6.5.438"
+  },
+  "license": "MIT"
+}

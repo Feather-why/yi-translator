@@ -1,0 +1,32 @@
+{
+  "source": "src/frontend/options/welcome.ts",
+  "method": "读取当前实际 welcome.ts；plan() 去除类型注解、fillForm() 使用 TypeScript transpileModule 在内存转换。h/L/RPC 用本地桩，未改前端、未调网络接口。",
+  "findings": [
+    {
+      "line": 315,
+      "case": "builtin API 存在，但 providers:test 失败；内置服务仍为默认 enabled:true",
+      "actual": {
+        "incorrectReady": true
+      },
+      "reason": "detect():177 仅保存 'Translator' in self，丢弃 builtin 的真实检测结果。plan():316 直接以 builtinP.enabled 显示 '✓ 可以用，已启用'。完成页已修，但方案页未同步。",
+      "expected": "区分 API 存在、服务启用和实际语言包就绪；方案页显示真实测试结果。"
+    },
+    {
+      "line": 645,
+      "case": "新建 OpenAI 兼容预设服务，首次填写合成 key 保存成功，然后同页不重输 key 再保存",
+      "actual": {
+        "savesAfterFirst": 1,
+        "savesAfterSecond": 1,
+        "message": "先粘贴 API Key"
+      },
+      "reason": "current 缓存 providers:add 返回的 configured:false。保存成功后没有刷新 current，key.value 却已清空，第二次 click 被旧 configured 阻止。后端正确支持省略密钥，问题在前端缓存。",
+      "expected": "保存成功后刷新 providers:list 对应条目，或至少同步本地 current 的配置就绪标记。"
+    }
+  ],
+  "additionalCopyIssue": {
+    "line": 132,
+    "actual": "quota 一律提示等下个周期",
+    "reason": "DeepL API Developer 为总额度、不自动按月恢复；可改为查看账户额度或换服务，只有明确可重置时才提示等待。",
+    "priority": "low"
+  }
+}

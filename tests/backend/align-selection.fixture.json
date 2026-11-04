@@ -1,0 +1,32 @@
+{
+  "provenance": "用户给出的Wikipedia截图源句与中文转录；noise前句和Babylon下一句是明确的合成干扰上下文，未声称整段为截图原文。",
+  "pairs": [
+    {
+      "id": "sealand-screenshot",
+      "source": "Initially it was named the \"Dynasty of the Country of the Sea\" with Sealand later becoming customary.",
+      "target": "最初它被称为“海之国王朝”，后来“Sealand”成为常用名称。",
+      "sourceLang": "auto",
+      "targetLang": "zh-CN",
+      "phrase": "Dynasty of the Country of the Sea",
+      "expectedPhrase": "海之国王朝"
+    },
+    {
+      "id": "sealand-with-neighbour",
+      "source": "It was independent of Amorite-ruled Babylon in the Babylonian region. Initially it was named the \"Dynasty of the Country of the Sea\" with Sealand later becoming customary.",
+      "target": "它独立于阿摩利人统治的巴比伦，位于巴比伦地区。最初它被称为“海之国王朝”，后来“Sealand”成为常用名称。",
+      "sourceLang": "auto",
+      "targetLang": "zh-CN",
+      "phrase": "Dynasty of the Country of the Sea",
+      "expectedPhrase": "海之国王朝"
+    },
+    {
+      "id": "babylon-missing-punctuation",
+      "source": "Babylon also served as a regional capital of other empires, such as the Achaemenid Empire. Babylon is an ancient city in Mesopotamia.",
+      "target": "巴比伦还曾作为其他帝国的地区首都，例如阿契美尼德帝国巴比伦是美索不达米亚的一座古城。",
+      "sourceLang": "auto",
+      "targetLang": "zh-CN",
+      "sentence": "Babylon also served as a regional capital of other empires, such as the Achaemenid Empire.",
+      "expectedSentence": "巴比伦还曾作为其他帝国的地区首都，例如阿契美尼德帝国"
+    }
+  ]
+}

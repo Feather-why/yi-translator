@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Local-first translation test</title>
+<style>
+body { font-family: Georgia, "Times New Roman", serif; max-width: 720px; margin: 40px auto; color: #222; line-height: 1.55; font-size: 17px; padding: 0 20px; }
+h1 { font-family: -apple-system, "Segoe UI", sans-serif; letter-spacing: -.01em; }
+nav { display: flex; gap: 16px; font-family: sans-serif; font-size: 14px; }
+nav a { color: #555; text-decoration: none; }
+.note { color: #8a3b12; background: #fff6ef; padding: 8px 12px; border-radius: 6px; }
+code { background: #f2f2f2; padding: 1px 4px; border-radius: 3px; font-size: .9em; }
+table td { padding: 4px 8px; border: 1px solid #ddd; }
+</style></head>
+<body>
+<nav><a href="#home">Home</a><a href="#docs">Documentation</a><a href="#blog">Blog</a></nav>
+<h1>Building a faster browser translation extension</h1>
+<p>This page tests <a href="https://example.com/guide" id="guide">the <b>full guide</b></a> to local translation. Visit https://example.org/models for the model list, or run <code>llama-server -ngl 99</code> on your laptop.</p>
+<p class="note">The translated text should keep the same font and color as the original paragraph. Links must stay clickable after translation.</p>
+<p>Speed matters. The first screen should appear in under half a second! Quality matters too: the local model must beat classic machine translation.</p>
+<ul><li>Fast mode uses the free machine translation pool.</li><li>Accurate mode uses the 7B model on the desktop.</li><li>Combined mode shows the fast result first, then overwrites it.</li></ul>
+<blockquote><em>Read more, translate less.</em> This sentence is italic on purpose.</blockquote>
+<table><tr><td>Latency</td><td>Quality</td></tr><tr><td>Low enough for reading</td><td>Better than machine translation</td></tr></table>
+<p>这一段已经是中文，不应该被翻译。</p>
+<div id="dyn"></div>
+<p style="margin-top:1200px">This paragraph is far below the first screen and should only be translated after scrolling.</p>
+<script>
+setTimeout(() => { document.getElementById('dyn').innerHTML = '<p>This paragraph was added later by the page script.</p>'; }, 2500);
+</script>
+</body></html>

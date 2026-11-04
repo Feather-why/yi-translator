@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Layouts</title>
+<style>
+body{font-family:Arial,sans-serif;margin:0;color:#222;line-height:1.5}
+.page{display:grid;grid-template-columns:180px minmax(0,1fr) 160px;gap:20px;max-width:1100px;margin:0 auto}
+.row{display:flex;gap:16px;align-items:stretch}
+.row .tall{height:420px;background:#eef}
+table.clade{border-spacing:0;border-collapse:separate}
+td.clade-label{border-left:1px solid;border-bottom:1px solid;white-space:nowrap;padding:0 4px;vertical-align:bottom}
+td.clade-leaf{border-left:1px solid;padding-left:4px}
+.tl{margin:4px auto 0;width:250px;height:18px;position:relative;border:1px #666;border-style:solid none;white-space:nowrap;font-size:12px}
+main{position:relative}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+</style></head>
+<body>
+<!-- 文档站顶上的标签栏（Mintlify 一类）：固定高度的 flex 标签，文字居中 / 靠下 / 在带上边距的子元素里 -->
+<nav id="tabs" style="display:flex;gap:28px;height:52px;border-bottom:1px solid #ddd;font-size:14px">
+  <a href="#g" style="display:flex;align-items:center;height:100%;gap:8px">Guides</a>
+  <a href="#a" style="display:flex;align-items:flex-end;height:100%;padding-bottom:6px">API Reference</a>
+  <a href="#r" style="display:flex;height:100%"><span style="padding-top:22px">Released Notes</span></a>
+</nav>
+<div class="page" id="grid">Jump to the main content of this page
+  <nav><p>Contents of the article and its sections</p></nav>
+  <main>
+    <p id="p1">Humans are the most abundant and widespread species of primates, characterized by bipedalism and large complex brains.</p>
+    <div class="row" id="flex"><span>Short label text for this row</span><div class="tall"><p>The tall box sits next to the label and is much taller than it.</p></div></div>
+    <table class="clade" id="clade"><tr><td class="clade-label" rowspan="2">Hominoidea (hominoids, apes)</td><td class="clade-leaf"><p>Hylobatidae (gibbons)</p></td></tr>
+      <tr><td class="clade-leaf"><p>Hominidae (hominids, great apes)</p></td></tr></table>
+    <p>Read more about it <span class="sr">opens in a new window for screen readers</span> in the next section of the page.</p>
+    <!-- 维基百科信息框里的地质年代图：行内 span 包着块级的图，图里有绝对定位的色块、标签和一条 1px 的「现在」刻度线 -->
+    <table class="infobox" id="ibox" style="float:right;width:270px"><tr><th>Human<br><div id="trange">Temporal range: <span class="noprint"><span style="display:inline-block">0.3–0</span> million years ago<div class="tl"><div style="position:absolute;height:100%;left:0;width:200px;background:#fed96a"><a href="#pc">Precambrian era</a></div><div style="position:absolute;height:100%;left:200px;width:40px;background:#fd9a52"><a href="#pg">Pg</a></div><div id="mark" style="position:absolute;height:100%;background-color:#666;width:1px;left:249px"></div></div></span><div class="tl" id="tl2"><div style="position:absolute;height:18px;display:flex;left:0;width:175px;background:#fff0b9">Early Pleistocene</div><div style="position:absolute;height:18px;display:flex;left:175px;width:62px;background:#fff2c7">Middle age</div></div><a href="#x">Chibanian</a> – <a href="#y">present day</a></div></th></tr></table>
+    <h2>History</h2><p>The history of the species is long and interesting for many reasons.</p>
+  </main>
+  <aside><p>Appearance settings for this page</p></aside>
+</div>
+</body></html>

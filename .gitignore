@@ -1,0 +1,39 @@
+node_modules/
+.output/
+.wxt/
+dist/
+*.log
+.DS_Store
+Thumbs.db
+# 本地密钥、模型文件绝不进仓库
+.env
+.env.*
+*.gguf
+*.onnx
+*.safetensors
+models/
+gateway/.venv/
+gateway/config.local.*
+
+runtime/
+work/
+tests/.compiled/
+# 本地依赖生成的执行资源由 prebuild 准备，许可原文另存 public/licenses。
+public/assets/
+
+# 编辑器和本机开发配置
+.idea/
+.vscode/
+*.iml
+
+# 本地测试及包管理缓存
+coverage/
+playwright-report/
+test-results/
+.npm/
+__pycache__/
+*.pyc
+*.pyo
+
+# 可公开提交不含真实凭据的示例环境文件
+!.env.example

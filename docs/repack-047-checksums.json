@@ -1,0 +1,47 @@
+{
+  "file": ".output/translate-ext-0.2.12-chrome.zip",
+  "version": "0.2.12",
+  "files": 285,
+  "bytes": 50496296,
+  "sha256": "fe1ffb4029074dc7982086ff649376f5809249c1213952e26c42f5840e01a06e",
+  "rootManifest": true,
+  "allEntriesMatchBuild": true,
+  "backend": "0.2.12-release",
+  "date": "2026-11-04",
+  "validation": {
+    "typecheck": true,
+    "ui": 32,
+    "media": 12,
+    "httpIntegrationGroups": 6,
+    "handoffGroups": 3,
+    "builtinGroups": 4,
+    "realLanguagePackDownload": false
+  },
+  "sourceFilesUnchanged": 156,
+  "tabs": [
+    {
+      "source": "Guides",
+      "translation": "指南",
+      "originalCenter": 25.5,
+      "translatedCenter": 26,
+      "delta": 0.5,
+      "stage": "final"
+    },
+    {
+      "source": "API Reference",
+      "translation": "接口参考",
+      "originalCenter": 41,
+      "translatedCenter": 41.5,
+      "delta": 0.5,
+      "stage": "final"
+    },
+    {
+      "source": "Released Notes",
+      "translation": "发布说明",
+      "originalCenter": 32,
+      "translatedCenter": 32,
+      "delta": 0,
+      "stage": "final"
+    }
+  ]
+}

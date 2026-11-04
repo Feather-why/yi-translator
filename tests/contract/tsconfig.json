@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "types": [],
+    "rootDir": "../../src",
+    "outDir": "../.compiled"
+  },
+  "include": ["../../typecheck/shims.d.ts", "../../src/backend/**/*.ts", "../../src/shared/**/*.ts"]
+}

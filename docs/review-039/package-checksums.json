@@ -1,0 +1,9 @@
+{
+  "file": ".output/translate-ext-0.2.11-chrome.zip",
+  "version": "0.2.11",
+  "files": 285,
+  "bytes": 50486299,
+  "sha256": "f177d9816c376cb6eb249d750641917d08e42b806035cfd4b24e2320f040c49a",
+  "rootManifest": true,
+  "allEntriesMatchBuild": true
+}

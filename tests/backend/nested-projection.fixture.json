@@ -1,0 +1,222 @@
+{
+  "at": "2026-11-03T21:20:01.331Z",
+  "purpose": "完整Core标签恢复前后回归。既有已观察样例，不是新留出集。模型请求、对齐和恢复总时延单独记录。",
+  "seeds": [
+    42,
+    77
+  ],
+  "modes": [
+    "dictionary-only",
+    "warm-alignment"
+  ],
+  "cases": [
+    {
+      "id": "dev-01-babylon-plain",
+      "split": "dev",
+      "family": "public-babylon",
+      "category": "public_history_terminology",
+      "origin": {
+        "kind": "user_provided_public_excerpt",
+        "url": "https://en.wikipedia.org/wiki/Babylon"
+      },
+      "source": "Babylon also served as a regional capital of other empires, such as the Achaemenid Empire.",
+      "sourceLang": "en",
+      "targetLang": "zh-CN",
+      "context": {
+        "title": "Babylon",
+        "summary": "A historical article about the ancient city and its changing political roles."
+      },
+      "checks": {
+        "meaningPoints": [
+          "巴比伦也曾作为其他帝国的地区性首府或区域首都。",
+          "阿契美尼德帝国是举例，不是巴比伦另一个名字，也没有说它是所有帝国唯一的首都。"
+        ],
+        "acceptableVariants": [
+          "regional capital可译地区首府、区域首都等。",
+          "Achaemenid可采用合理通行音译；保留英文专名并清楚表达帝国关系也可接受。"
+        ],
+        "watchFor": [
+          "served as被硬译为提供服务。",
+          "擅自加入时间、君主或征服事件。"
+        ]
+      }
+    },
+    {
+      "id": "dev-02-sealand-quotation",
+      "split": "dev",
+      "family": "public-sealand",
+      "category": "public_quoted_name",
+      "origin": {
+        "kind": "user_provided_public_excerpt",
+        "url": "https://en.wikipedia.org/wiki/First_Sealand_dynasty"
+      },
+      "source": "Initially it was named the \"Dynasty of the Country of the Sea\" with Sealand later becoming customary.",
+      "sourceLang": "en",
+      "targetLang": "zh-CN",
+      "context": {
+        "title": "First Sealand dynasty",
+        "summary": "The sentence explains an earlier dynastic designation and the later customary name Sealand."
+      },
+      "checks": {
+        "meaningPoints": [
+          "最初的名称是引号内的完整王朝称谓。",
+          "Sealand是后来惯用的名称，先后关系和两种称呼需清楚。"
+        ],
+        "acceptableVariants": [
+          "引号内可译海之国王朝、海国王朝等合理称谓。",
+          "Sealand可保留英文，也可采用前后一致的海国、海地等合理历史译名；不因单一译名机械判错。"
+        ],
+        "watchFor": [
+          "把Country或Sea当成网页所在地区。",
+          "遗漏王朝概念或反转最初与后来的关系。"
+        ]
+      }
+    },
+    {
+      "id": "dev-06-sealand-nested-link",
+      "split": "dev",
+      "family": "public-sealand",
+      "category": "public_nested_placeholder_variant",
+      "origin": {
+        "kind": "user_provided_public_excerpt_with_synthetic_markup",
+        "url": "https://en.wikipedia.org/wiki/First_Sealand_dynasty"
+      },
+      "source": "Initially it was named the <g0>\"Dynasty of <g1>the Country of the Sea</g1>\"</g0> with Sealand later becoming customary.",
+      "sourceLang": "en",
+      "targetLang": "zh-CN",
+      "context": {
+        "title": "First Sealand dynasty",
+        "summary": "The nested inline slots belong to the earlier full designation, not to the later name Sealand."
+      },
+      "checks": {
+        "meaningPoints": [
+          "保留最初称谓与后来惯用名称的先后关系。",
+          "外层g0是完整早期称谓，内层g1对应Country of the Sea；不能将它们挪到后面的Sealand。"
+        ],
+        "acceptableVariants": [
+          "引号式样和合理译名不要求固定；嵌套关系必须保留。"
+        ],
+        "placeholders": {
+          "tokens": [
+            "<g0>",
+            "<g1>",
+            "</g1>",
+            "</g0>"
+          ],
+          "parents": {
+            "g0": "root",
+            "g1": "g0"
+          }
+        },
+        "watchFor": [
+          "将g1移出g0。",
+          "把标签或编号当成需要解释的正文。"
+        ]
+      }
+    },
+    {
+      "id": "dev-07-guide-and-opaque-atoms",
+      "split": "dev",
+      "family": "synthetic-installation-order",
+      "category": "nested_links_and_opaque_atoms",
+      "origin": {
+        "kind": "synthetic"
+      },
+      "source": "Open <g2>the <g3>installation guide</g3></g2>, leave <x0/> unchanged, and copy <x7/> only after you have closed the editor.",
+      "sourceLang": "en",
+      "targetLang": "zh-CN",
+      "checks": {
+        "meaningPoints": [
+          "打开安装指南，保持x0代表的原子内容不变。",
+          "只有关闭编辑器以后才复制x7，不能反转动作顺序。"
+        ],
+        "acceptableVariants": [
+          "installation guide可译安装指南、安装说明等。"
+        ],
+        "placeholders": {
+          "tokens": [
+            "<g2>",
+            "<g3>",
+            "</g3>",
+            "</g2>",
+            "<x0/>",
+            "<x7/>"
+          ],
+          "parents": {
+            "g2": "root",
+            "g3": "g2",
+            "x0": "root",
+            "x7": "root"
+          }
+        },
+        "watchFor": [
+          "把x0或x7改成自行编造的网址或命令。",
+          "把only after译成之前。"
+        ]
+      }
+    },
+    {
+      "id": "holdout-03-nonconsecutive-nested-slots",
+      "split": "holdout",
+      "family": "synthetic-conservation-seals",
+      "category": "nested_links_multiple_opaque_atoms",
+      "origin": {
+        "kind": "synthetic"
+      },
+      "source": "<g4>The conservation team moved <g9>the bronze seal</g9> to the north gallery</g4>, while <g2>the stone seal</g2> stayed beside <x8/>. Record both catalogue codes, <x3/> and <x11/>, exactly as printed.",
+      "sourceLang": "en",
+      "targetLang": "zh-CN",
+      "checks": {
+        "meaningPoints": [
+          "被移往北展厅的是青铜印章，石印章留在x8旁边。",
+          "两个目录编号x3与x11都需按原样记录；seal在这里是印章，不是海豹。"
+        ],
+        "acceptableVariants": [
+          "conservation team可译文物保护团队、修复团队等。",
+          "bronze可译青铜、铜制，若不破坏与stone的对照可接受。"
+        ],
+        "placeholders": {
+          "tokens": [
+            "<g4>",
+            "<g9>",
+            "</g9>",
+            "</g4>",
+            "<g2>",
+            "</g2>",
+            "<x8/>",
+            "<x3/>",
+            "<x11/>"
+          ],
+          "parents": {
+            "g4": "root",
+            "g9": "g4",
+            "g2": "root",
+            "x8": "root",
+            "x3": "root",
+            "x11": "root"
+          }
+        },
+        "watchFor": [
+          "将不连续编号重新排成0、1、2。",
+          "把g9移出g4或漏掉任一x标签。",
+          "交换两件物品的去向。"
+        ]
+      }
+    },
+    {
+      "id": "flat-links-control",
+      "source": "The <g0>browser</g0> translates this page locally. The <g1>model</g1> preserves links and code.",
+      "sourceLang": "en",
+      "targetLang": "zh-CN",
+      "context": {
+        "title": "Browser translation"
+      },
+      "checks": {
+        "meaningPoints": [
+          "浏览器在本地翻译页面；模型保留链接和代码。",
+          "g0=浏览器，g1=模型。"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "extensionName": {
+    "message": "Yi · Local-first Web Translator"
+  },
+  "extensionDescription": {
+    "message": "Bilingual webpages, selection translation, and dictionaries, with local models and multiple translation services."
+  },
+  "actionTitle": {
+    "message": "Translate this page (Alt+A)"
+  },
+  "togglePageDescription": {
+    "message": "Translate / restore this page"
+  },
+  "translateSelectionDescription": {
+    "message": "Translate selected text"
+  }
+}

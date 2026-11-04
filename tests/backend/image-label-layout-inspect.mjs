@@ -1,0 +1,33 @@
+/** 只读提取当前前端纯布局函数，用合成坐标说明标签误并风险；不推断截图 OCR 原文。 */
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { build } from 'vite';
+const root=fileURLToPath(new URL('../../',import.meta.url));
+const sourceRoot=path.resolve(process.env.SOURCE_ROOT || root);
+const file=path.join(sourceRoot,'src/frontend/media/images.ts');
+const text=await readFile(file,'utf8');
+const hash=value=>createHash('sha256').update(value).digest('hex');
+const scratch=path.join(root,'work/image-label-layout-inspect');
+const output=path.resolve(process.env.REPORT_DIR || scratch);
+await mkdir(scratch,{recursive:true}); await mkdir(output,{recursive:true});
+const start=text.indexOf('function toLine('),group=text.indexOf('function groupLines(');
+const end=text.indexOf('/* ------------------------------------------------------------------ */',group);
+assert.ok(start>=0 && group>start && end>group,'现有函数边界需要重新审核');
+// 只在临时文件中重导出两个现有纯函数，避免导入 DOM UI，不改原文件。
+const entry=path.join(scratch,'group-lines.ts');
+await writeFile(entry,text.slice(start,end)+'\nexport {groupLines};\n');
+await build({configFile:false,root,logLevel:'warn',publicDir:false,build:{outDir:scratch,emptyOutDir:false,target:'esnext',lib:{entry,formats:['es'],fileName:()=> 'group-lines.mjs'}}});
+const {groupLines}=await import(pathToFileURL(path.join(scratch,'group-lines.mjs')).href);
+const block=(label,x,y)=>({text:label,confidence:0.99,box:[[x,y],[x+80,y],[x+80,y+10],[x,y+10]]});
+const labels=[block('North Bay',20,10),block('South Cape',20,25)];
+const merged=groupLines(labels);
+assert.equal(merged.length,1);assert.equal(merged[0].text,'North Bay South Cape');
+const distant=groupLines([block('North Bay',20,10),block('South Cape',400,25)]);
+assert.equal(distant.length,2);
+assert.equal(hash(await readFile(file,'utf8')),hash(text));
+const report={ok:true,sourceHash:hash(text),noNetwork:true,noOcr:true,noTranslation:true,fixture:'synthetic-label-coordinates',actualScreenshotOcrAvailable:false,nearbyLabels:{blocks:2,paragraphs:merged.length,text:merged[0].text},distantLabels:{blocks:2,paragraphs:distant.length},conclusion:'相邻且对齐的独立标签被现有函数当作正文合并；此测试不证明截图的真实OCR字符串。'};
+await writeFile(path.join(output,'image-label-layout-inspect.json'),JSON.stringify(report,null,2));
+console.log(JSON.stringify(report));

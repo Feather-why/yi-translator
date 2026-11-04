@@ -1,0 +1,17 @@
+{
+  "file": ".output/translate-ext-0.2.11-chrome.zip",
+  "version": "0.2.11",
+  "files": 285,
+  "bytes": 50491465,
+  "sha256": "3ebe7d149805cb9c32a065d8b3816aa8b8ea286a5f201deda7fddce458a28b81",
+  "rootManifest": true,
+  "allEntriesMatchBuild": true,
+  "rebuiltFor": "HANDOFF section 43",
+  "tests": {
+    "typecheck": "passed",
+    "ui": "31/31",
+    "media": "12/12",
+    "backendIntegrationGroups": 6
+  },
+  "sourceFilesUnchanged": 155
+}

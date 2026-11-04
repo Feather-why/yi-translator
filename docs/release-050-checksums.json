@@ -1,0 +1,97 @@
+{
+  "date": "2026-11-04",
+  "version": "0.2.13",
+  "build": {
+    "version": "0.2.13",
+    "buildId": "0.2.13-8931b5a47e37",
+    "sourceDigest": "8931b5a47e3731303cdecff436107cb8641fcc5bb4276b12213c94dca0280ce7",
+    "builtAt": "2026-11-04T20:46:28.303Z"
+  },
+  "environment": {
+    "os": "Windows x64",
+    "node": "24.22.1",
+    "npm": "12.2.1",
+    "browser": "Microsoft Edge, isolated temporary profiles"
+  },
+  "packageLockSha256": "9618771ba1e1ce77075d7d6aba6259db18b067e8710ccbe051802cb914b8fc5f",
+  "cleanVerification": {
+    "independentDependencyInstall": true,
+    "originalRuntimeAndCachesCopied": false,
+    "backend": {
+      "passed": 837,
+      "failed": 0,
+      "skipped": 0
+    },
+    "ui": {
+      "page": 32,
+      "media": 12
+    },
+    "productionBrowserGroups": 6,
+    "builtinBrowserGroups": 4,
+    "handoffBrowserGroups": 3,
+    "checks": [
+      {
+        "name": "typecheck",
+        "ms": 3846
+      },
+      {
+        "name": "test:backend",
+        "ms": 103511
+      },
+      {
+        "name": "test:ui",
+        "ms": 70916
+      },
+      {
+        "name": "zip",
+        "ms": 10082
+      },
+      {
+        "name": "browser",
+        "ms": 10808
+      },
+      {
+        "name": "builtin-setup-browser",
+        "ms": 7373
+      },
+      {
+        "name": "handoff047-browser",
+        "ms": 7299
+      },
+      {
+        "name": "local-installer-package",
+        "ms": 115
+      }
+    ],
+    "initialBuildId": "0.2.13-6602b21157eb"
+  },
+  "finalPackagingFollowup": {
+    "sourcePackageTests": 3,
+    "productionBrowserGroups": 6,
+    "cleanAndWorkingSourceDigestMatch": true,
+    "fileSymlinkTest": "not run: platform did not permit creating file symlinks; directory, hard-link and junction guards passed"
+  },
+  "realOcr": false,
+  "realAlignment": false,
+  "cloudProviders": "local HTTP playback; no live cloud API credentials",
+  "privacy": {
+    "historicalDocumentsSanitized": 33,
+    "diagnosticScriptsMadePortable": 3,
+    "pdfFixturesInspected": 4,
+    "pdfFixturePages": 12,
+    "pngFixturesInspected": 1,
+    "thirdPartyAttributionsPreserved": true
+  },
+  "packages": [
+    {
+      "file": ".output/translate-ext-0.2.13-chrome.zip",
+      "bytes": 34694482,
+      "sha256": "8034cb4ec05a66ab50489d7637a59a4f3036e410baad64092049fda63414ddc2"
+    },
+    {
+      "file": ".output/yi-local-setup-0.2.13-windows-x64.zip",
+      "bytes": 30629,
+      "sha256": "5fe1dc2bd169ba4d15fc2593b65170735605def341a3a25f1f861e05b543c857"
+    }
+  ]
+}

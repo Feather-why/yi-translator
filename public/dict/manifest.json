@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "source": "https://github.com/skywind3000/ECDICT/tree/39cfb9672c0906b63569e0453c2e6abfb9ab182a",
+  "revision": "39cfb9672c0906b63569e0453c2e6abfb9ab182a",
+  "license": "MIT",
+  "count": 100000,
+  "columns": [
+    "word",
+    "phonetic",
+    "translation",
+    "definition",
+    "exchange",
+    "tag",
+    "collins",
+    "oxford"
+  ],
+  "csvSha256": "d1ecbdf9ee2b920afb6f430ca6b6bb9f559588cf0dff86e04bd255f9390843cc",
+  "gzipSha256": "c546a8da7448af6c9a9bafa65a12690752984fd9744c4b58cf2c68367a89622c",
+  "compressedBytes": 5627049,
+  "jsonBytes": 14004570
+}

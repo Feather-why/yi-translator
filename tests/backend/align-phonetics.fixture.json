@@ -1,0 +1,13 @@
+{
+  "description": "User-reported public Phonetics paragraph, actual local Hy-MT2-1.8B output at temperature 0.1; captured before positional links were removed.",
+  "pair": {
+    "id": "phonetics",
+    "source": "Phonetics is a branch of linguistics that mainly concerns the articulation, sound wave properties, and perception of speech sounds. The field of phonetics is traditionally divided into three sub-disciplines: articulatory phonetics, acoustic phonetics, and auditory phonetics. Linguists who specialize in studying these physical properties of vocalization are phoneticians. Traditionally, the minimal linguistic unit of phonetics is the phone, an individual speech sound. This differs from the minimal linguistic unit of phonology, the phoneme. Phonemes are abstract, language-specific categorizations of phones and are defined as the smallest units that affect meaning.[1]",
+    "target": "语音学是语言学的一个分支，主要研究语音的发音、声波特性以及感知现象。该领域通常被分为三个子学科：发音语音学、声学语音学和听觉语音学。专门研究语音物理特性的语言学家被称为语音学家。传统上，语音学中的最小语言单位就是音素，即单个语音符号。这与音系学中的最小语言单位——音位不同。音位是与特定语言相关的抽象分类单位，定义为影响意义的最小单位。[1]",
+    "sourceLang": "auto",
+    "targetLang": "zh-CN"
+  },
+  "oldConcerns": [
+    "，"
+  ]
+}

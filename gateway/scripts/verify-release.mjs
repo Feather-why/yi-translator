@@ -1,0 +1,26 @@
+import { spawnSync } from 'node:child_process';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { checkExtension } from './check-extension.mjs';
+import { verifyIntegrity } from './optimize-assets.mjs';
+import { checkZip } from './check-zip.mjs';
+const root=fileURLToPath(new URL('../../',import.meta.url));
+const pkg=JSON.parse(await readFile(path.join(root,'package.json'),'utf8'));
+const npm=process.env.npm_execpath;
+if(!npm) throw new Error('请通过 npm run verify:release 运行完整验收。');
+const checks=[];
+function run(name,args){const start=Date.now();const r=spawnSync(process.execPath,args,{cwd:root,stdio:'inherit',env:process.env});if(r.error)throw r.error;if(r.status!==0)throw new Error(`${name} 未通过（${r.status}）`);checks.push({name,ms:Date.now()-start});}
+for(const name of ['typecheck','test:backend','test:ui','zip'])run(name,[npm,'run',name]);
+const extension=await checkExtension();await verifyIntegrity(extension.directory);
+for(const name of ['browser','builtin-setup-browser','handoff047-browser'])run(name,[`tests/backend/${name}.mjs`]);
+if(process.env.OCR_MODEL_CACHE)run('media-reader-049-browser',['tests/backend/media-reader-049-browser.mjs']);
+if(process.env.ALIGN_MODEL_CACHE)run('alignment-release049',['tests/backend/alignment-release049.mjs']);
+run('local-installer-package',['gateway/scripts/pack-local.mjs']);
+const packages=[];
+for(const name of [`translate-ext-${pkg.version}-chrome.zip`,`yi-local-setup-${pkg.version}-windows-x64.zip`])packages.push(await checkZip(path.join(root,'.output',name)));
+const build=JSON.parse(await readFile(path.join(extension.directory,'build-info.json'),'utf8'));
+const report={at:new Date().toISOString(),version:pkg.version,build,checks,packages,realOcr:!!process.env.OCR_MODEL_CACHE,realAlignment:!!process.env.ALIGN_MODEL_CACHE};
+await mkdir(path.join(root,'work/release-verification'),{recursive:true});
+await writeFile(path.join(root,'work/release-verification',`${pkg.version}.json`),JSON.stringify(report,null,2)+'\n');
+console.log(JSON.stringify(report,null,2));

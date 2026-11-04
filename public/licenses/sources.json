@@ -1,0 +1,446 @@
+{
+  "schemaVersion": 1,
+  "archivedAt": "2026-11-03T14:20:09.012Z",
+  "scope": "Backend runtime dependencies, OCR/PDF assets, alignment model declarations and ECDICT data introduced for B3-B5. Not a claim that every component in upstream aggregate notices is enabled in this browser build.",
+  "files": [
+    {
+      "file": "onnxruntime-web-LICENSE",
+      "component": "onnxruntime-web 1.22.0-dev.20250409-89f8206ba4",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/onnxruntime/89f8206ba4/LICENSE",
+      "revision": "89f8206ba4f1c22c39e0297fb55272e8ce8cd7d0",
+      "bytes": 1073,
+      "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c",
+      "sourceRef": "89f8206ba4"
+    },
+    {
+      "file": "onnxruntime-web-ThirdPartyNotices.txt",
+      "component": "onnxruntime-web 1.22.0-dev.20250409-89f8206ba4",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/onnxruntime/89f8206ba4/ThirdPartyNotices.txt",
+      "revision": "89f8206ba4f1c22c39e0297fb55272e8ce8cd7d0",
+      "bytes": 326866,
+      "sha256": "e9e90971a8e75a9a8ac0c6412e29c1202d079998389915aa485f46c816c3b4cc",
+      "sourceRef": "89f8206ba4"
+    },
+    {
+      "file": "ocr-onnxruntime-web-LICENSE",
+      "component": "onnxruntime-web 1.31.1 (PaddleOCR dependency)",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/onnxruntime/6af1a932e2286d5c58166085d24c68783033edee/LICENSE",
+      "revision": "6af1a932e2286d5c58166085d24c68783033edee",
+      "bytes": 1073,
+      "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"
+    },
+    {
+      "file": "ocr-onnxruntime-web-ThirdPartyNotices.txt",
+      "component": "onnxruntime-web 1.31.1 (PaddleOCR dependency)",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/onnxruntime/6af1a932e2286d5c58166085d24c68783033edee/ThirdPartyNotices.txt",
+      "revision": "6af1a932e2286d5c58166085d24c68783033edee",
+      "bytes": 338088,
+      "sha256": "143764b952fdb1a7c69ce653bfba74a7744d6a8a573bfb73e235fba356c83de3"
+    },
+    {
+      "file": "paddleocr-LICENSE",
+      "component": "@paddleocr/paddleocr-js 0.4.2 and PaddleOCR official model source",
+      "sourceUrl": "https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/e5046169b225bcdfbe25d45b4e809ff0f1a69c2c/LICENSE",
+      "revision": "e5046169b225bcdfbe25d45b4e809ff0f1a69c2c",
+      "bytes": 11376,
+      "sha256": "3840c5c0c61c294264d2dd77b8777be6ddd90121ef4e0e64abcd22edea581d6e"
+    },
+    {
+      "file": "opencv-upstream-LICENSE",
+      "component": "OpenCV 4.10.0",
+      "sourceUrl": "https://raw.githubusercontent.com/opencv/opencv/71d3237a093b60a27601c20e9ee6c3e52154e8b1/LICENSE",
+      "revision": "71d3237a093b60a27601c20e9ee6c3e52154e8b1",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "file": "opencv-js-LICENSE",
+      "component": "@techstark/opencv-js 4.10.0-release.1",
+      "sourceUrl": "https://raw.githubusercontent.com/TechStark/opencv-js/6a539c08d2ca78dc544dc6fee670af38740c4237/LICENSE",
+      "revision": "6a539c08d2ca78dc544dc6fee670af38740c4237",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "file": "e5-upstream-MODEL-CARD.md",
+      "component": "intfloat/multilingual-e5-small model license declaration",
+      "sourceUrl": "https://huggingface.co/intfloat/multilingual-e5-small/raw/614241f622f53c4eeff9890bdc4f31cfecc418b3/README.md",
+      "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+      "bytes": 497538,
+      "sha256": "0038de97aee16258cecbad7ffda4b4febd6953e747a00e0ddbc8e6ed241e9c1c"
+    },
+    {
+      "file": "e5-converted-MODEL-CARD.md",
+      "component": "Xenova/multilingual-e5-small ONNX conversion used by extension",
+      "sourceUrl": "https://huggingface.co/Xenova/multilingual-e5-small/raw/761b726dd34fb83930e26aab4e9ac3899aa1fa78/README.md",
+      "revision": "761b726dd34fb83930e26aab4e9ac3899aa1fa78",
+      "bytes": 1077,
+      "sha256": "561a19594636657fe033f8b4427a7743b5f6f3a12f16cecc5f286feca0453245"
+    },
+    {
+      "file": "e5-code-unilm-LICENSE",
+      "component": "Microsoft unilm repository containing E5 source code (separate from model-card declaration)",
+      "sourceUrl": "https://raw.githubusercontent.com/microsoft/unilm/31c5b904ca1bf2afb4c234a6675c683a4e5fc7cd/LICENSE",
+      "revision": "31c5b904ca1bf2afb4c234a6675c683a4e5fc7cd",
+      "bytes": 1104,
+      "sha256": "904dc4d8749877f1dba1cda48200d2462dccbeb7c134d5e4ef6fa75e0198c8fe"
+    },
+    {
+      "file": "clipper-BOOST-LICENSE.txt",
+      "component": "Clipper 6.4.2 referenced Boost Software License",
+      "sourceUrl": "https://www.boost.org/LICENSE_1_0.txt",
+      "revision": "Boost Software License 1.0 (2003-08-17)",
+      "bytes": 1338,
+      "sha256": "c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566"
+    },
+    {
+      "file": "clipper-jsbn-LICENSE",
+      "component": "Tom Wu JSBN license mirror referenced by Clipper embedded attribution",
+      "sourceUrl": "https://raw.githubusercontent.com/andyperlitch/jsbn/57257b2763b4179e20196fca6714cb5dbc20806d/LICENSE",
+      "revision": "57257b2763b4179e20196fca6714cb5dbc20806d",
+      "bytes": 1544,
+      "sha256": "e0e396530fd1624126e9a7e0df94811e4062e03baeccb07bc33c934b0fd93a85"
+    },
+    {
+      "file": "transformers-LICENSE",
+      "component": "@huggingface/transformers 3.8.1",
+      "sourcePackagePath": "node_modules/@huggingface/transformers/LICENSE",
+      "sourceUrl": "https://registry.npmjs.org/@huggingface/transformers/-/transformers-3.8.1.tgz",
+      "revision": "2ec882e739e4cb461f8d440d4d7394cbf5372429",
+      "integrity": "sha512-tsTk4zVjImqdqjS8/AOZg2yNLd1z9S5v+7oUPpXaasDRwEDhB+xnglK1k5cad26lL5/ZIaeREgWWy0bs9y9pPA==",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "file": "pdfjs-LICENSE",
+      "component": "pdfjs-dist 6.5.438",
+      "sourcePackagePath": "node_modules/pdfjs-dist/LICENSE",
+      "sourceUrl": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.5.438.tgz",
+      "revision": "0a4153349dc473ba950fc17941c5ca7eda43c1de",
+      "integrity": "sha512-vg8Pw1x+AFKy4AMDvhuWl5cOYV8d698UoEANoFFhc79hqXDnZQqnOXoxw3HG907WHOg1JYOvLhP756boddFxpA==",
+      "bytes": 10174,
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594"
+    },
+    {
+      "file": "js-yaml-LICENSE",
+      "component": "js-yaml 4.3.2",
+      "sourcePackagePath": "node_modules/js-yaml/LICENSE",
+      "sourceUrl": "https://registry.npmjs.org/js-yaml/-/js-yaml-4.3.2.tgz",
+      "revision": "79ca68d90f333fbe6d9e42827527e62636200191",
+      "integrity": "sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==",
+      "bytes": 1084,
+      "sha256": "a07bc24468b9654ce76a547d47a2db282d07733b715db4c73a98bd63961f9550"
+    },
+    {
+      "file": "huggingface-jinja-LICENSE",
+      "component": "@huggingface/jinja 0.5.11 installed dependency",
+      "sourcePackagePath": "node_modules/@huggingface/jinja/LICENSE",
+      "sourceUrl": "https://registry.npmjs.org/@huggingface/jinja/-/jinja-0.5.11.tgz",
+      "revision": "0.5.11",
+      "integrity": "sha512-YzEzwM5oQf4r0vs7ifWQ+yuVR1YkAHrjERQ+a8WRsStHHp4NRBg+NesjiFc+X2AFUpRvvrIeHDS1xFy9jY/IjQ==",
+      "bytes": 1069,
+      "sha256": "d6e7b19451c1b3d1d66353bb4b1274138953b3bfd9ae60c56e77b1f548796982"
+    },
+    {
+      "file": "ecdict-LICENSE",
+      "component": "ECDICT bundled 100,000-entry derivative",
+      "sourcePackagePath": "public/dict/LICENSE-ECDICT.txt",
+      "sourceUrl": "https://raw.githubusercontent.com/skywind3000/ECDICT/39cfb9672c0906b63569e0453c2e6abfb9ab182a/LICENSE",
+      "revision": "39cfb9672c0906b63569e0453c2e6abfb9ab182a",
+      "bytes": 1063,
+      "sha256": "f8552dd246f61a4e064569eae6194a01c6b3d63b03bf27c6ca863593c549ed0f"
+    },
+    {
+      "file": "pdfjs-wasm-LICENSE_JBIG2",
+      "component": "pdfjs-dist 6.5.438 wasm/LICENSE_JBIG2",
+      "sourcePackagePath": "node_modules/pdfjs-dist/wasm/LICENSE_JBIG2",
+      "sourceUrl": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.5.438.tgz",
+      "revision": "0a4153349dc473ba950fc17941c5ca7eda43c1de",
+      "integrity": "sha512-vg8Pw1x+AFKy4AMDvhuWl5cOYV8d698UoEANoFFhc79hqXDnZQqnOXoxw3HG907WHOg1JYOvLhP756boddFxpA==",
+      "bytes": 12862,
+      "sha256": "9e66b7f1b934a28b37f3bc4dac97915de1674271e79a0a88182a18ed9731b4d1"
+    },
+    {
+      "file": "pdfjs-wasm-LICENSE_OPENJPEG",
+      "component": "pdfjs-dist 6.5.438 wasm/LICENSE_OPENJPEG",
+      "sourcePackagePath": "node_modules/pdfjs-dist/wasm/LICENSE_OPENJPEG",
+      "sourceUrl": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.5.438.tgz",
+      "revision": "0a4153349dc473ba950fc17941c5ca7eda43c1de",
+      "integrity": "sha512-vg8Pw1x+AFKy4AMDvhuWl5cOYV8d698UoEANoFFhc79hqXDnZQqnOXoxw3HG907WHOg1JYOvLhP756boddFxpA==",
+      "bytes": 2112,
+      "sha256": "a6af136f3e15038a666b61f376612a07d9a4e48cb7c01adbf3e33b3f14ab49b6"
+    },
+    {
+      "file": "pdfjs-wasm-LICENSE_PDFJS_JBIG2",
+      "component": "pdfjs-dist 6.5.438 wasm/LICENSE_PDFJS_JBIG2",
+      "sourcePackagePath": "node_modules/pdfjs-dist/wasm/LICENSE_PDFJS_JBIG2",
+      "sourceUrl": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.5.438.tgz",
+      "revision": "0a4153349dc473ba950fc17941c5ca7eda43c1de",
+      "integrity": "sha512-vg8Pw1x+AFKy4AMDvhuWl5cOYV8d698UoEANoFFhc79hqXDnZQqnOXoxw3HG907WHOg1JYOvLhP756boddFxpA==",
+      "bytes": 555,
+      "sha256": "aad3cce09842e00e9e11ad5e8fef8cc02fbc3a3768fe2f007443b9cee37aaee5"
+    },
+    {
+      "file": "pdfjs-wasm-LICENSE_PDFJS_OPENJPEG",
+      "component": "pdfjs-dist 6.5.438 wasm/LICENSE_PDFJS_OPENJPEG",
+      "sourcePackagePath": "node_modules/pdfjs-dist/wasm/LICENSE_PDFJS_OPENJPEG",
+      "sourceUrl": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.5.438.tgz",
+      "revision": "0a4153349dc473ba950fc17941c5ca7eda43c1de",
+      "integrity": "sha512-vg8Pw1x+AFKy4AMDvhuWl5cOYV8d698UoEANoFFhc79hqXDnZQqnOXoxw3HG907WHOg1JYOvLhP756boddFxpA==",
+      "bytes": 1285,
+      "sha256": "717fc62da03292dbb4dd0c8280bd4ce7bb8550dcf31d772bc93455fb50313425"
+    },
+    {
+      "file": "pdfjs-wasm-LICENSE_PDFJS_QCMS",
+      "component": "pdfjs-dist 6.5.438 wasm/LICENSE_PDFJS_QCMS",
+      "sourcePackagePath": "node_modules/pdfjs-dist/wasm/LICENSE_PDFJS_QCMS",
+      "sourceUrl": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.5.438.tgz",
+      "revision": "0a4153349dc473ba950fc17941c5ca7eda43c1de",
+      "integrity": "sha512-vg8Pw1x+AFKy4AMDvhuWl5cOYV8d698UoEANoFFhc79hqXDnZQqnOXoxw3HG907WHOg1JYOvLhP756boddFxpA==",
+      "bytes": 1036,
+      "sha256": "508a77d2e7b51d98adeed32648ad124b7b30241a8e70b2e72c99f92d8e5874d1"
+    },
+    {
+      "file": "pdfjs-wasm-LICENSE_PDFJS_QUICKJS",
+      "component": "pdfjs-dist 6.5.438 wasm/LICENSE_PDFJS_QUICKJS",
+      "sourcePackagePath": "node_modules/pdfjs-dist/wasm/LICENSE_PDFJS_QUICKJS",
+      "sourceUrl": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.5.438.tgz",
+      "revision": "0a4153349dc473ba950fc17941c5ca7eda43c1de",
+      "integrity": "sha512-vg8Pw1x+AFKy4AMDvhuWl5cOYV8d698UoEANoFFhc79hqXDnZQqnOXoxw3HG907WHOg1JYOvLhP756boddFxpA==",
+      "bytes": 1075,
+      "sha256": "7fdaed3d938f3dfce7189db07e74773c23789143a55db81a95d09dcbfda267b0"
+    },
+    {
+      "file": "pdfjs-wasm-LICENSE_QCMS",
+      "component": "pdfjs-dist 6.5.438 wasm/LICENSE_QCMS",
+      "sourcePackagePath": "node_modules/pdfjs-dist/wasm/LICENSE_QCMS",
+      "sourceUrl": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.5.438.tgz",
+      "revision": "0a4153349dc473ba950fc17941c5ca7eda43c1de",
+      "integrity": "sha512-vg8Pw1x+AFKy4AMDvhuWl5cOYV8d698UoEANoFFhc79hqXDnZQqnOXoxw3HG907WHOg1JYOvLhP756boddFxpA==",
+      "bytes": 1121,
+      "sha256": "36d847ae882f6574ebc72f56a4f354e4f104fde4a584373496482e97d52d31bc"
+    },
+    {
+      "file": "pdfjs-wasm-LICENSE_QUICKJS",
+      "component": "pdfjs-dist 6.5.438 wasm/LICENSE_QUICKJS",
+      "sourcePackagePath": "node_modules/pdfjs-dist/wasm/LICENSE_QUICKJS",
+      "sourceUrl": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.5.438.tgz",
+      "revision": "0a4153349dc473ba950fc17941c5ca7eda43c1de",
+      "integrity": "sha512-vg8Pw1x+AFKy4AMDvhuWl5cOYV8d698UoEANoFFhc79hqXDnZQqnOXoxw3HG907WHOg1JYOvLhP756boddFxpA==",
+      "bytes": 1130,
+      "sha256": "598fd7fc928e4350abce36e337ba5a1346923c5c692f5be92c3d8e29ddd7c18d"
+    },
+    {
+      "file": "pdfjs-cmaps-LICENSE",
+      "component": "pdfjs-dist 6.5.438 cmaps/LICENSE",
+      "sourcePackagePath": "node_modules/pdfjs-dist/cmaps/LICENSE",
+      "sourceUrl": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.5.438.tgz",
+      "revision": "0a4153349dc473ba950fc17941c5ca7eda43c1de",
+      "integrity": "sha512-vg8Pw1x+AFKy4AMDvhuWl5cOYV8d698UoEANoFFhc79hqXDnZQqnOXoxw3HG907WHOg1JYOvLhP756boddFxpA==",
+      "bytes": 2080,
+      "sha256": "aa92ab5a472974865a96fd4a4e9c13bb41bf6fe1b309cb6b8da48bc9e19839a2"
+    },
+    {
+      "file": "pdfjs-standard_fonts-LICENSE_FOXIT",
+      "component": "pdfjs-dist 6.5.438 standard_fonts/LICENSE_FOXIT",
+      "sourcePackagePath": "node_modules/pdfjs-dist/standard_fonts/LICENSE_FOXIT",
+      "sourceUrl": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.5.438.tgz",
+      "revision": "0a4153349dc473ba950fc17941c5ca7eda43c1de",
+      "integrity": "sha512-vg8Pw1x+AFKy4AMDvhuWl5cOYV8d698UoEANoFFhc79hqXDnZQqnOXoxw3HG907WHOg1JYOvLhP756boddFxpA==",
+      "bytes": 1553,
+      "sha256": "b578cdd2345840ada550bd12519533812320d5f1d21cf4c1c7e1b1b0a31c98b7"
+    },
+    {
+      "file": "pdfjs-standard_fonts-LICENSE_LIBERATION",
+      "component": "pdfjs-dist 6.5.438 standard_fonts/LICENSE_LIBERATION",
+      "sourcePackagePath": "node_modules/pdfjs-dist/standard_fonts/LICENSE_LIBERATION",
+      "sourceUrl": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.5.438.tgz",
+      "revision": "0a4153349dc473ba950fc17941c5ca7eda43c1de",
+      "integrity": "sha512-vg8Pw1x+AFKy4AMDvhuWl5cOYV8d698UoEANoFFhc79hqXDnZQqnOXoxw3HG907WHOg1JYOvLhP756boddFxpA==",
+      "bytes": 22154,
+      "sha256": "d2c4d5b3e115a519cb58eb691aa64538397e2611f9ebe801392cf9667997e7dc"
+    },
+    {
+      "file": "clipper-COPYRIGHT-HEADER.txt",
+      "component": "clipper-lib 6.4.2 embedded Clipper and JSBN attributions",
+      "sourcePackagePath": "node_modules/clipper-lib/clipper.js (leading comment blocks only)",
+      "sourceUrl": "https://registry.npmjs.org/clipper-lib/-/clipper-lib-6.4.2.tgz",
+      "revision": "97a4d5e79671973b457c13432d8e8c4107f8a51d",
+      "integrity": "sha512-knglhjQX5ihNj/XCIs6zCHrTemdvHY3LPZP9XB2nq2/3igyYMFueFXtfp84baJvEE+f8pO1ZS4UVeEgmLnAprQ==",
+      "bytes": 5328,
+      "sha256": "d1326a49e9b54eb36cacde5c57c018a6f06bd785496bc4ddb8bf2d7965142d8a"
+    }
+  ],
+  "packages": [
+    {
+      "name": "@huggingface/transformers",
+      "version": "3.8.1",
+      "declaredLicense": "Apache-2.0",
+      "registryUrl": "https://registry.npmjs.org/%40huggingface%2Ftransformers/3.8.1",
+      "tarball": "https://registry.npmjs.org/@huggingface/transformers/-/transformers-3.8.1.tgz",
+      "integrity": "sha512-tsTk4zVjImqdqjS8/AOZg2yNLd1z9S5v+7oUPpXaasDRwEDhB+xnglK1k5cad26lL5/ZIaeREgWWy0bs9y9pPA==",
+      "gitHead": "2ec882e739e4cb461f8d440d4d7394cbf5372429",
+      "repository": {
+        "url": "git+https://github.com/huggingface/transformers.js.git",
+        "type": "git"
+      }
+    },
+    {
+      "name": "onnxruntime-web",
+      "version": "1.22.0-dev.20250409-89f8206ba4",
+      "declaredLicense": "MIT",
+      "registryUrl": "https://registry.npmjs.org/onnxruntime-web/1.22.0-dev.20250409-89f8206ba4",
+      "tarball": "https://registry.npmjs.org/onnxruntime-web/-/onnxruntime-web-1.22.0-dev.20250409-89f8206ba4.tgz",
+      "integrity": "sha512-0uS76OPgH0hWCPrFKlL8kYVV7ckM7t/36HfbgoFw6Nd0CZVVbQC4PkrR8mBX8LtNUFZO25IQBqV2Hx2ho3FlbQ==",
+      "gitHead": null,
+      "repository": {
+        "url": "git+https://github.com/Microsoft/onnxruntime.git",
+        "type": "git"
+      }
+    },
+    {
+      "name": "onnxruntime-web",
+      "version": "1.31.1",
+      "declaredLicense": "MIT",
+      "registryUrl": "https://registry.npmjs.org/onnxruntime-web/1.31.1",
+      "tarball": "https://registry.npmjs.org/onnxruntime-web/-/onnxruntime-web-1.31.1.tgz",
+      "integrity": "sha512-5GeH+bWQ+HxM10z7erGlsWqryrwMbSvm/1tkIsKTT48g0fI19VXVVC435t4t7VsPdSQeS7NmuZPXrQ73k82URw==",
+      "gitHead": null,
+      "repository": {
+        "url": "git+https://github.com/Microsoft/onnxruntime.git",
+        "type": "git"
+      }
+    },
+    {
+      "name": "@paddleocr/paddleocr-js",
+      "version": "0.4.2",
+      "declaredLicense": "Apache-2.0",
+      "registryUrl": "https://registry.npmjs.org/%40paddleocr%2Fpaddleocr-js/0.4.2",
+      "tarball": "https://registry.npmjs.org/@paddleocr/paddleocr-js/-/paddleocr-js-0.4.2.tgz",
+      "integrity": "sha512-vpwSaFVKcpTaRaNXIXL7R76lyvGjqQ8K17d7L/gsugQZYkNfwMR+yesAkLwzZtXmQVdMhVGtQmqBAQNkjvQ3EQ==",
+      "gitHead": "e5046169b225bcdfbe25d45b4e809ff0f1a69c2c",
+      "repository": {
+        "url": "git+https://github.com/PaddlePaddle/PaddleOCR.git",
+        "type": "git",
+        "directory": "paddleocr-js/packages/core"
+      }
+    },
+    {
+      "name": "@techstark/opencv-js",
+      "version": "4.10.0-release.1",
+      "declaredLicense": "Apache-2.0",
+      "registryUrl": "https://registry.npmjs.org/%40techstark%2Fopencv-js/4.10.0-release.1",
+      "tarball": "https://registry.npmjs.org/@techstark/opencv-js/-/opencv-js-4.10.0-release.1.tgz",
+      "integrity": "sha512-S4XELidRiQeA0q1s9VQLo540wCxUo24r1O4C+LqZ6llX+sPCXvZCPv3Ice8dEIr0uavyZ8YZeKXSBdDgMXSXjw==",
+      "gitHead": "6a539c08d2ca78dc544dc6fee670af38740c4237",
+      "repository": {
+        "url": "git+https://github.com/TechStark/opencv-js.git",
+        "type": "git"
+      }
+    },
+    {
+      "name": "pdfjs-dist",
+      "version": "6.5.438",
+      "declaredLicense": "Apache-2.0",
+      "registryUrl": "https://registry.npmjs.org/pdfjs-dist/6.5.438",
+      "tarball": "https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.5.438.tgz",
+      "integrity": "sha512-vg8Pw1x+AFKy4AMDvhuWl5cOYV8d698UoEANoFFhc79hqXDnZQqnOXoxw3HG907WHOg1JYOvLhP756boddFxpA==",
+      "gitHead": "0a4153349dc473ba950fc17941c5ca7eda43c1de",
+      "repository": {
+        "url": "git+https://github.com/mozilla/pdf.js.git",
+        "type": "git"
+      }
+    },
+    {
+      "name": "clipper-lib",
+      "version": "6.4.2",
+      "declaredLicense": "BSL",
+      "registryUrl": "https://registry.npmjs.org/clipper-lib/6.4.2",
+      "tarball": "https://registry.npmjs.org/clipper-lib/-/clipper-lib-6.4.2.tgz",
+      "integrity": "sha512-knglhjQX5ihNj/XCIs6zCHrTemdvHY3LPZP9XB2nq2/3igyYMFueFXtfp84baJvEE+f8pO1ZS4UVeEgmLnAprQ==",
+      "gitHead": "97a4d5e79671973b457c13432d8e8c4107f8a51d",
+      "repository": {
+        "url": "git://github.com/junmer/clipper-lib.git",
+        "type": "git"
+      }
+    },
+    {
+      "name": "js-yaml",
+      "version": "4.3.2",
+      "declaredLicense": "MIT",
+      "registryUrl": "https://registry.npmjs.org/js-yaml/4.3.2",
+      "tarball": "https://registry.npmjs.org/js-yaml/-/js-yaml-4.3.2.tgz",
+      "integrity": "sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==",
+      "gitHead": "79ca68d90f333fbe6d9e42827527e62636200191",
+      "repository": {
+        "url": "git+https://github.com/nodeca/js-yaml.git",
+        "type": "git"
+      }
+    },
+    {
+      "name": "@huggingface/jinja",
+      "version": "0.5.11",
+      "declaredLicense": "MIT",
+      "registryUrl": "https://registry.npmjs.org/%40huggingface%2Fjinja/0.5.11",
+      "tarball": "https://registry.npmjs.org/@huggingface/jinja/-/jinja-0.5.11.tgz",
+      "integrity": "sha512-YzEzwM5oQf4r0vs7ifWQ+yuVR1YkAHrjERQ+a8WRsStHHp4NRBg+NesjiFc+X2AFUpRvvrIeHDS1xFy9jY/IjQ==",
+      "gitHead": null,
+      "repository": {
+        "url": "git+https://github.com/huggingface/huggingface.js.git",
+        "type": "git"
+      }
+    }
+  ],
+  "notes": [
+    "PaddleOCR, OpenCV upstream and opencv-js do not have a root NOTICE file at the pinned revisions (HTTP 404 verified); no replacement NOTICE was invented.",
+    "The E5 upstream model card explicitly declares license: mit; neither the pinned upstream nor conversion model repository supplies a standalone LICENSE file. e5-code-unilm-LICENSE is preserved as the official source-code repository license and is not presented as an independently supplied weights LICENSE.",
+    "The historical Stanford JSBN LICENSE URL referenced by clipper.js timed out during archival. clipper-jsbn-LICENSE is the unmodified 2016 LICENSE from the maintained jsbn npm repository mirror; its provenance is distinct from the embedded Clipper header.",
+    "ORT ThirdPartyNotices.txt files are upstream aggregate notices and may describe optional components not built into the browser runtime. They are retained intact, not edited to guess runtime composition."
+  ],
+  "modelArtifacts": [
+    {
+      "name": "Xenova/multilingual-e5-small/config.json",
+      "sourceUrl": "https://huggingface.co/Xenova/multilingual-e5-small/resolve/761b726dd34fb83930e26aab4e9ac3899aa1fa78/config.json",
+      "revision": "761b726dd34fb83930e26aab4e9ac3899aa1fa78",
+      "bytes": 658,
+      "observedSha256": "cb99455288675345e1a4f411438d5d0adbba5fbd3a67ea4fb03c015433b996c1",
+      "integrityPolicy": "Revision-pinned download; SHA256 recorded from the real validation cache for provenance, not independently enforced by Transformers.js at runtime."
+    },
+    {
+      "name": "Xenova/multilingual-e5-small/tokenizer.json",
+      "sourceUrl": "https://huggingface.co/Xenova/multilingual-e5-small/resolve/761b726dd34fb83930e26aab4e9ac3899aa1fa78/tokenizer.json",
+      "revision": "761b726dd34fb83930e26aab4e9ac3899aa1fa78",
+      "bytes": 17082730,
+      "observedSha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39",
+      "integrityPolicy": "Revision-pinned download; SHA256 recorded from the real validation cache for provenance, not independently enforced by Transformers.js at runtime."
+    },
+    {
+      "name": "Xenova/multilingual-e5-small/tokenizer_config.json",
+      "sourceUrl": "https://huggingface.co/Xenova/multilingual-e5-small/resolve/761b726dd34fb83930e26aab4e9ac3899aa1fa78/tokenizer_config.json",
+      "revision": "761b726dd34fb83930e26aab4e9ac3899aa1fa78",
+      "bytes": 443,
+      "observedSha256": "a1d6bc8734a6f635dc158508bef000f8e2e5a759c7d92f984b2c86e5ff53425b",
+      "integrityPolicy": "Revision-pinned download; SHA256 recorded from the real validation cache for provenance, not independently enforced by Transformers.js at runtime."
+    },
+    {
+      "name": "Xenova/multilingual-e5-small/onnx/model_quantized.onnx",
+      "sourceUrl": "https://huggingface.co/Xenova/multilingual-e5-small/resolve/761b726dd34fb83930e26aab4e9ac3899aa1fa78/onnx/model_quantized.onnx",
+      "revision": "761b726dd34fb83930e26aab4e9ac3899aa1fa78",
+      "bytes": 118308185,
+      "observedSha256": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193",
+      "integrityPolicy": "Revision-pinned download; SHA256 recorded from the real validation cache for provenance, not independently enforced by Transformers.js at runtime."
+    },
+    {
+      "name": "PP-OCRv5_mobile_det_onnx_infer.tar",
+      "sourceUrl": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_det_onnx_infer.tar",
+      "requiredSha256": "781056046c9ed77a15c94681605db6a0f62317c2e9cce6931c71da2478d4bc30",
+      "integrityPolicy": "SHA256 verified by offscreen/media.ts before caching and inference, including cache reads."
+    },
+    {
+      "name": "PP-OCRv5_mobile_rec_onnx_infer.tar",
+      "sourceUrl": "https://paddle-model-ecology.bj.bcebos.com/paddlex/official_inference_model/paddle3.0.0/PP-OCRv5_mobile_rec_onnx_infer.tar",
+      "requiredSha256": "f7e792bc836f36e7ef895ad47c426d75b0b75b1650caa6d63fe9418441ffba8c",
+      "integrityPolicy": "SHA256 verified by offscreen/media.ts before caching and inference, including cache reads."
+    }
+  ]
+}

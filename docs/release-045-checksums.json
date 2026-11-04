@@ -1,0 +1,20 @@
+{
+  "file": ".output/translate-ext-0.2.12-chrome.zip",
+  "version": "0.2.12",
+  "files": 285,
+  "bytes": 50495123,
+  "sha256": "58ec814295ba6cfe7677d9e2f9912e15f75da132e34ea5fd4ec1c1b295f0a1bc",
+  "rootManifest": true,
+  "allEntriesMatchBuild": true,
+  "backend": "0.2.12-release",
+  "date": "2026-11-04",
+  "validation": {
+    "backend": 783,
+    "ui": 32,
+    "media": 12,
+    "httpIntegrationGroups": 6,
+    "builtinSetupGroups": 4,
+    "realLanguagePackDownload": false
+  },
+  "protectedFilesUnchanged": 69
+}
