@@ -4,10 +4,10 @@
 import type { ErrorInfo, Mode, SegmentTiming, SiteRule, Stage, TranslateJob } from '../../shared/protocol';
 import { rpc, uid } from '../../shared/rpc';
 import { hostMatches, type UiSettings } from '../../shared/settings';
-import { displayOf, insideOurs, isOurs, isPinnedLabel, isVisiblyRendered } from './dom';
+import { displayOf, hasLetters, insideOurs, isOurs, isSkipped, isPinnedLabel, isVisiblyRendered } from './dom';
 import { installLinkForwarding } from './links';
 import type { JobHandlers, TranslateClient } from './port';
-import { looksLikeTarget, scan, type UnitSpec } from './scanner';
+import { hasBlockChild, looksLikeTarget, scanSteps, type UnitSpec } from './scanner';
 import { insertAfterChunk, restore, serialize, splitSentences, type Serialized } from './serialize';
 import { installPageStyle, removePageStyle, styleTranslation } from './style';
 import { FirstScreenPerf } from './perf';
@@ -50,6 +50,8 @@ export interface Unit {
   version: number;
   /** 逐句模式拆开的文本节点：[原节点, 新节点, 拆开后原节点的内容]。 */
   splits: [Text, Text, string][];
+  /** 超长逐句段落在两批插入间等待的任务。 */
+  mountTimer?: number;
 }
 
 export interface Progress {
@@ -60,6 +62,8 @@ export interface Progress {
   lastError?: ErrorInfo;
 }
 
+// 给输入、页面动画及浏览器布局留出时间。单个段落保持原子处理。
+const DOM_BUDGET_MS = 6;
 const HEADING = /^H[1-6]$/;
 const SENTENCE_PUNCT = /[.!?。！？;；:：]/;
 
@@ -74,9 +78,16 @@ export class PageTranslator {
   private jobs = new Set<string>();
   private io: IntersectionObserver | null = null;
   private mo: MutationObserver | null = null;
+  private session: AbortController | null = null;
   private batch = new Map<number, { unit: Unit; part: Part }[]>();
   private flushTimer = 0;
+  private scanRoots = new Set<Element>();
+  private scanning: { root: Element; steps: Generator<UnitSpec | null> } | null = null;
+  private scanTimer = 0;
+  private viewportQueue = [new Set<Unit>(), new Set<Unit>()];
+  private viewportTimer = 0;
   private dirty = new Set<Unit>();
+  private regroup = new Set<Unit>();
   private added = new Set<Node>();
   private moTimer = 0;
   private moFirst = 0;
@@ -100,49 +111,78 @@ export class PageTranslator {
     return this.settings.mode;
   }
 
-  async start(): Promise<void> {
+  async start(verifiedRule?: SiteRule | null): Promise<void> {
     if (this.active) return;
     this.active = true;
+    const session = new AbortController();
+    this.session = session;
+    const { signal } = session;
     this.t0 = performance.now();
     this.perf = new FirstScreenPerf(this.t0, this.settings.mode);
     this.sensitive = hostMatches(location.hostname, this.settings.sensitive);
     this.progress = { active: true, total: 0, done: 0, errors: 0 };
     this.emit();
     // 站点规则：有缓存就直接用、后台再核对；没缓存才等后台（最多 0.4 秒）
-    const href = location.href;
-    const fresh = rpc('rules:forUrl', { url: href }).then(
-      (r) => (void storeRule(href, r ?? null), { ok: true as const, rule: r ?? null }),
-      () => ({ ok: false as const, rule: null }),
-    );
-    const cached = await cachedRule(href);
-    if (cached.hit) {
-      this.rule = cached.rule;
-      this.perf.ruleCached = true;
-      void fresh.then((f) => {
-        // 规则在别处改过：按新规则重来（通常发生在开始后几百毫秒内，几乎看不出来）
-        if (f.ok && this.active && !sameEffect(f.rule, this.rule)) { this.stop(); void this.start(); }
-      });
+    if (verifiedRule !== undefined) {
+      this.rule = verifiedRule;
     } else {
-      this.rule = await Promise.race([fresh.then((f) => f.rule), new Promise<null>((r) => setTimeout(() => r(null), 400))]);
+      const href = location.href;
+      const fresh = rpc('rules:forUrl', { url: href }).then(
+        (r) => {
+          if (!signal.aborted) void storeRule(href, r ?? null);
+          return { ok: true as const, rule: r ?? null };
+        },
+        () => ({ ok: false as const, rule: null }),
+      );
+      const cached = await cachedRule(href);
+      if (signal.aborted) return;
+      if (cached.hit) {
+        this.rule = cached.rule;
+        this.perf.ruleCached = true;
+        void fresh.then((f) => {
+          // 只更新发起查询的这一轮；直接使用新规则，避免重新读到还没写完的缓存。
+          if (f.ok && !signal.aborted && !sameEffect(f.rule, this.rule)) { this.stop(); void this.start(f.rule); }
+        });
+      } else {
+        const rule = await Promise.race([fresh.then((f) => f.rule), new Promise<null>((r) => setTimeout(() => r(null), 400))]);
+        if (signal.aborted) return;
+        this.rule = rule;
+      }
     }
-    if (!this.active) return;
-    if (this.rule?.waitFor) await waitFor(this.rule.waitFor, 3000);
-    if (!this.active) return;
+    if (this.rule?.waitFor) await waitFor(this.rule.waitFor, 3000, signal);
+    if (signal.aborted) return;
+    // 有些单页应用会替换整个 body。旧观察器仍绑定旧树，换页时需要取消这轮任务并重新扫描。
+    const originalBody = document.body;
+    let restartTimer = 0;
+    const bodyChanges = new MutationObserver(() => {
+      if (!document.body || document.body === originalBody || restartTimer) return;
+      restartTimer = window.setTimeout(() => {
+        restartTimer = 0;
+        if (signal.aborted || !document.body || document.body === originalBody) return;
+        this.stop();
+        void this.start();
+      }, 0);
+    });
+    bodyChanges.observe(document.documentElement, { childList: true });
+    signal.addEventListener('abort', () => { bodyChanges.disconnect(); clearTimeout(restartTimer); }, { once: true });
+    if (!originalBody) return;
     const s = this.rule?.display === 'replace' ? { ...this.settings, display: 'translation' as const } : this.settings;
     installPageStyle(s);
     this.context = { url: location.href, title: document.title, summary: '' };
 
-    this.io = new IntersectionObserver((entries) => this.onIntersect(entries), { rootMargin: '120% 0px 120% 0px' });
-    this.mo = new MutationObserver((recs) => this.onMutations(recs));
-    this.mo.observe(document.body, { childList: true, subtree: true, characterData: true });
+    this.io = new IntersectionObserver((entries) => { if (!signal.aborted) this.onIntersect(entries); }, { rootMargin: '120% 0px 120% 0px' });
+    this.mo = new MutationObserver((recs) => { if (!signal.aborted) this.onMutations(recs); });
+    this.mo.observe(document.body, { childList: true, subtree: true, characterData: true, attributeFilter: ['href', 'target', 'hidden'], attributeOldValue: true });
     this.scope = this.settings.mainOnly && !this.rule?.include?.length ? detectContent() : null;
-    this.addUnits(scan(document.body, this.scanOpts()));
-    this.context.summary = this.makeSummary();
+    this.scanRoots.add(document.body);
+    this.drainScan();
   }
 
   stop(): void {
     if (!this.active) return;
     this.active = false;
+    this.session?.abort();
+    this.session = null;
     this.perf = null;
     for (const j of this.jobs) this.client.cancel(j);
     this.jobs.clear();
@@ -153,9 +193,16 @@ export class PageTranslator {
     clearTimeout(this.moTimer);
     this.flushTimer = this.moTimer = 0;
     this.batch.clear();
+    clearTimeout(this.scanTimer);
+    clearTimeout(this.viewportTimer);
+    this.scanTimer = this.viewportTimer = 0;
+    this.scanRoots.clear();
+    this.scanning = null;
+    this.viewportQueue.forEach(queue => queue.clear());
     this.dirty.clear();
+    this.regroup.clear();
     this.added.clear();
-    for (const u of this.units.values()) this.resetUnit(u);
+    for (const u of this.units.values()) if (u.parts.length) this.resetUnit(u);
     this.units.clear();
     this.byTarget.clear();
     this.segIndex.clear();
@@ -216,65 +263,94 @@ export class PageTranslator {
     };
   }
 
-  private addUnits(specs: UnitSpec[]) {
-    for (const spec of specs) {
-      const unit: Unit = {
-        id: uid('u'),
-        root: spec.root,
-        nodes: spec.nodes,
-        whole: spec.whole,
-        ser: { text: '', slots: [], pos: [], letters: 0 },
-        parts: [],
-        state: 'idle',
-        mode: 'block',
-        version: 0,
-        splits: [],
-      };
-      this.units.set(unit.id, unit);
-      if (spec.whole) this.nodeUnit.set(spec.root, unit);
-      else spec.nodes.forEach((n) => this.nodeUnit.set(n, unit));
-      let set = this.byTarget.get(spec.root);
-      if (!set) {
-        set = new Set();
-        this.byTarget.set(spec.root, set);
-        this.io?.observe(spec.root);
-      }
-      set.add(unit);
+  private addUnit(spec: UnitSpec) {
+    if (!spec.root.isConnected || spec.nodes.some(node => node.parentNode !== spec.root)) return;
+    const unit: Unit = {
+      id: uid('u'), root: spec.root, nodes: spec.nodes, whole: spec.whole,
+      ser: { text: '', slots: [], pos: [], letters: 0 }, parts: [],
+      state: 'idle', mode: 'block', version: 0, splits: [],
+    };
+    this.units.set(unit.id, unit);
+    if (spec.whole) this.nodeUnit.set(spec.root, unit);
+    else spec.nodes.forEach((n) => this.nodeUnit.set(n, unit));
+    let set = this.byTarget.get(spec.root);
+    if (!set) {
+      set = new Set();
+      this.byTarget.set(spec.root, set);
+      this.io?.observe(spec.root);
+    }
+    set.add(unit);
+    // 遍历时积累最开始的正文。首屏可先送出，后续批次接着使用同一份摘要。
+    if (this.scanning?.root === document.body && this.context.summary.length < 300) {
+      const text = (spec.root.textContent || '').trim();
+      if (text.length > 40) this.context.summary = (this.context.summary + text.replace(/\s+/g, ' ') + ' ').slice(0, 300);
     }
   }
 
-  private makeSummary(): string {
-    let s = '';
-    for (const u of this.units.values()) {
-      const t = (u.root.textContent || '').trim();
-      if (t.length > 40) s += t.replace(/\s+/g, ' ') + ' ';
-      if (s.length > 300) break;
-    }
-    return s.slice(0, 300);
+  private drainScan() {
+    this.scanTimer = 0;
+    if (!this.active) return;
+    const deadline = performance.now() + DOM_BUDGET_MS;
+    do {
+      if (!this.scanning) {
+        const root = this.scanRoots.values().next().value;
+        if (!root) return;
+        this.scanRoots.delete(root);
+        if (!root.isConnected || insideOurs(root) || this.unitOf(root)) continue;
+        if (this.scope && !scopeAllows(this.scope, root)) continue;
+        this.scanning = { root, steps: scanSteps(root, this.scanOpts()) };
+      }
+      if (!this.scanning.root.isConnected) { this.scanning = null; continue; }
+      const next = this.scanning.steps.next();
+      if (next.done) this.scanning = null;
+      else if (next.value) this.addUnit(next.value);
+    } while (performance.now() < deadline);
+    if (this.scanning || this.scanRoots.size) this.scanTimer = window.setTimeout(() => this.drainScan(), 0);
   }
 
   private onIntersect(entries: IntersectionObserverEntry[]) {
     const vh = window.innerHeight;
     for (const e of entries) {
-      if (!e.isIntersecting) continue;
-      const r = e.boundingClientRect;
-      const prio = r.bottom > 0 && r.top < vh ? 0 : 1;
-      const set = this.byTarget.get(e.target);
-      if (!set) continue;
-      for (const u of set) if (u.state === 'idle') this.request(u, prio);
+      const units = this.byTarget.get(e.target);
+      if (!units) continue;
+      const priority = e.boundingClientRect.bottom > 0 && e.boundingClientRect.top < vh ? 0 : 1;
+      for (const unit of units) {
+        this.viewportQueue[1 - priority].delete(unit);
+        if (e.isIntersecting && unit.state === 'idle') this.viewportQueue[priority].add(unit);
+        else this.viewportQueue[priority].delete(unit);
+      }
     }
+    if (!this.viewportTimer) this.drainViewport();
+  }
+
+  private drainViewport() {
+    this.viewportTimer = 0;
+    if (!this.active) return;
+    const deadline = performance.now() + DOM_BUDGET_MS;
+    const before = this.progress.total;
+    do {
+      const priority = this.viewportQueue[0].size ? 0 : 1;
+      const queue = this.viewportQueue[priority];
+      const unit = queue.values().next().value;
+      if (!unit) break;
+      queue.delete(unit);
+      if (unit.state === 'idle' && unit.root.isConnected && this.units.has(unit.id)) this.request(unit, priority);
+    } while (performance.now() < deadline);
+    if (this.progress.total !== before) this.emit();
+    if (this.viewportQueue.some(queue => queue.size)) this.viewportTimer = window.setTimeout(() => this.drainViewport(), 0);
   }
 
   private request(unit: Unit, priority: number) {
     unit.nodes = unit.whole ? Array.from(unit.root.childNodes).filter((n) => !isOurs(n)) : unit.nodes.filter((n) => n.isConnected);
-    if (!unit.nodes.length) return;
+    // 隐藏/尚未布局的节点可能在下一次展开后进入视口，保留 idle 也省去当前的序列化。
+    if (!unit.nodes.length || !isVisiblyRendered(unit.root)) return;
     unit.ser = serialize(unit.nodes);
     const plain = unit.ser.text.replace(/<\/?[gx]\d+\/?>/g, '');
     const elLang = unit.root.closest('[lang]')?.getAttribute('lang');
     // 网格容器里夹在块之间的文字（页面骨架上的「跳到正文」之类）：译文插进去会变成一个新的网格项，
     // 被拉到整行那么高、还会挤乱整页布局，不翻
     const gridRun = !unit.whole && /grid/.test(displayOf(unit.root));
-    if (unit.ser.letters < 2 || looksLikeTarget(plain, this.settings.targetLang, elLang) || gridRun || !isVisiblyRendered(unit.root) || isPinnedLabel(unit.root)) {
+    if (unit.ser.letters < 2 || looksLikeTarget(plain, this.settings.targetLang, elLang) || gridRun || isPinnedLabel(unit.root)) {
       unit.state = 'skipped';
       return;
     }
@@ -283,39 +359,65 @@ export class PageTranslator {
     const s = this.settings;
     const chunks = s.bilingualStyle === 'sentence' && s.display === 'bilingual' ? splitSentences(unit.ser) : [];
 
+    if (unit.whole) unit.root.setAttribute('data-tx-root', '');
+    let css = '';
+    const mount = (part: Part) => {
+      part.tx.setAttribute('data-tx-seg', part.segId);
+      if (!css) {
+        styleTranslation(part.tx, unit.root, s.targetLang, unit.mode === 'block', this.rule);
+        css = part.tx.style.cssText;
+      } else part.tx.style.cssText = css;
+      unit.parts.push(part);
+      this.progress.total++;
+    };
+    const send = () => {
+      for (const part of unit.parts) {
+        this.segIndex.set(part.segId, { unit, part });
+        this.enqueue(unit, part, priority);
+      }
+    };
+
     if (chunks.length >= 2) {
       unit.mode = 'sentence';
-      const parts: Part[] = new Array(chunks.length);
-      // 从后往前插：前面句子的文本偏移不受影响
-      for (let i = chunks.length - 1; i >= 0; i--) {
-        const tx = this.makeTx('sentence', chunks[i].text.replace(/<\/?[gx]\d+\/?>/g, '').length);
-        const split = insertAfterChunk(unit.ser, chunks[i], tx);
-        if (split) unit.splits.push([split[0], split[1], split[0].data]);
-        parts[i] = { segId: `${unit.id}.${v}.${i}`, tx, text: chunks[i].text, slots: chunks[i].slots, stage: 'pending', priority };
-      }
-      unit.parts = parts;
+      let index = chunks.length;
+      const batched = chunks.length > 96;
+      const insert = () => {
+        unit.mountTimer = undefined;
+        // 本轮若遇到网页替换原文，留给变更队列按新结构重建，旧的字符位置不再可用。
+        if (!unit.root.isConnected || this.dirty.has(unit) || this.regroup.has(unit)) {
+          this.removeUnit(unit);
+          if (unit.root.isConnected) this.added.add(unit.root);
+          return;
+        }
+        const deadline = performance.now() + DOM_BUDGET_MS;
+        const first = index;
+        do {
+          const i = --index;
+          const chunk = chunks[i];
+          // 从后往前拆，仍未插入的句子继续使用原来的 UTF-16 位置。
+          const tx = this.makeTx('sentence', chunk.text.replace(/<\/?[gx]\d+\/?>/g, '').length);
+          const split = insertAfterChunk(unit.ser, chunk, tx);
+          if (split) unit.splits.push([split[0], split[1], split[0].data]);
+          mount({ segId: `${unit.id}.${v}.${i}`, tx, text: chunk.text, slots: chunk.slots, stage: 'pending', priority });
+        } while (index && (!batched || (first - index < 96 && performance.now() < deadline)));
+        this.mo?.takeRecords();
+        if (index) {
+          unit.mountTimer = window.setTimeout(() => { insert(); this.emit(); }, 0);
+        } else {
+          unit.parts.reverse();
+          send();
+        }
+      };
+      insert();
     } else {
       unit.mode = this.pickMode(unit, plain);
       const tx = this.makeTx(unit.mode, plain.length);
       if (unit.whole) unit.root.appendChild(tx);
       else (unit.nodes[unit.nodes.length - 1] as ChildNode).after(tx);
-      unit.parts = [{ segId: `${unit.id}.${v}.0`, tx, text: unit.ser.text, stage: 'pending', priority }];
+      mount({ segId: `${unit.id}.${v}.0`, tx, text: unit.ser.text, stage: 'pending', priority });
+      this.mo?.takeRecords();
+      send();
     }
-    this.mo?.takeRecords(); // 丢掉我们自己造成的变化
-
-    if (unit.whole) unit.root.setAttribute('data-tx-root', '');
-    let css = '';
-    for (const p of unit.parts) {
-      p.tx.setAttribute('data-tx-seg', p.segId);
-      if (!css) {
-        styleTranslation(p.tx, unit.root, s.targetLang, unit.mode === 'block', this.rule);
-        css = p.tx.style.cssText;
-      } else p.tx.style.cssText = css;
-      this.segIndex.set(p.segId, { unit, part: p });
-      this.enqueue(unit, p, priority);
-    }
-    this.progress.total += unit.parts.length;
-    this.emit();
   }
 
   private pickMode(unit: Unit, plain: string): UnitMode {
@@ -347,7 +449,6 @@ export class PageTranslator {
 
   private setPending(tx: HTMLElement) {
     tx.setAttribute('data-tx-stage', 'pending');
-    tx.removeAttribute('data-tx-swap');
     if (this.scramble) {
       tx.setAttribute('data-tx-fx', 'scramble');
       const mode = tx.getAttribute('data-tx-mode');
@@ -435,11 +536,8 @@ export class PageTranslator {
     stopScramble(part.tx);
     part.tx.replaceChildren(frag);
     part.tx.setAttribute('data-tx-stage', stage);
-    part.tx.removeAttribute('data-tx-swap');
-    if (visible) {
-      void part.tx.offsetWidth;
-      part.tx.setAttribute('data-tx-swap', '');
-    } else if (this.scramble) revealText(part.tx, this.settings.targetLang, 140);
+    // fast / streaming 到 final 的透明度由 CSS transition 过渡，浏览器可以一次排版整批译文。
+    if (!visible && this.scramble) revealText(part.tx, this.settings.targetLang, 140);
     part.tx.removeAttribute('title');
     part.stage = stage;
     part.translated = text;
@@ -576,6 +674,8 @@ export class PageTranslator {
   }
 
   private resetUnit(unit: Unit) {
+    clearTimeout(unit.mountTimer);
+    unit.mountTimer = undefined;
     const byJob = new Map<string, string[]>();
     for (const p of unit.parts) {
       this.segIndex.delete(p.segId);
@@ -614,6 +714,8 @@ export class PageTranslator {
 
   private removeUnit(unit: Unit) {
     this.resetUnit(unit);
+    if (unit.whole) this.nodeUnit.delete(unit.root);
+    else for (const n of unit.nodes) this.nodeUnit.delete(n);
     this.units.delete(unit.id);
     const set = this.byTarget.get(unit.root);
     if (set) {
@@ -621,6 +723,35 @@ export class PageTranslator {
       if (!set.size) {
         this.byTarget.delete(unit.root);
         this.io?.unobserve(unit.root);
+      }
+    }
+  }
+
+  /** 虚拟列表可用相同文字重建 DOM。保留现有请求与译文，改用当前原文节点还原链接、代码及位置。 */
+  private restoreRecycled(unit: Unit, nodes: Node[], fresh: Serialized) {
+    unit.nodes = nodes;
+    unit.ser = fresh;
+    const detached = unit.parts.some(part => !unit.root.contains(part.tx));
+    if (detached && unit.mode === 'sentence') {
+      const chunks = splitSentences(fresh);
+      unit.splits = unit.splits.filter(([head, tail]) => unit.root.contains(head) && unit.root.contains(tail));
+      for (let i = unit.parts.length - 1; i >= 0; i--) {
+        const part = unit.parts[i];
+        if (unit.root.contains(part.tx) || !chunks[i]) continue;
+        const split = insertAfterChunk(fresh, chunks[i], part.tx);
+        if (split) unit.splits.push([split[0], split[1], split[0].data]);
+      }
+      // splitText 会产生原文变更记录，和首次逐句挂载一样在这里丢弃。
+      this.mo?.takeRecords();
+    } else if (detached) {
+      (nodes[nodes.length - 1] as ChildNode).after(unit.parts[0].tx);
+    }
+    if (fresh.slots.length) {
+      for (const part of unit.parts) {
+        if (part.translated !== undefined && !part.tx.isContentEditable) {
+          finishReveal(part.tx);
+          part.tx.replaceChildren(restore(part.translated, fresh, part.slots).frag);
+        } else if (part.streamText !== undefined && !part.streamRaf) this.paintPartial({ unit, part });
       }
     }
   }
@@ -637,34 +768,111 @@ export class PageTranslator {
     return null;
   }
 
+  /** 混合内容容器中的行内片段，只有被插入/移除操作碰到的相邻片段需要重新分组。 */
+  private changedRun(root: Node, node: Node | null, direction: 'previousSibling' | 'nextSibling') {
+    while (node && isOurs(node)) node = node[direction];
+    const u = node && this.nodeUnit.get(node);
+    if (u && !u.whole && u.root === root) this.regroup.add(u);
+  }
+
   private onMutations(records: MutationRecord[]) {
+    // 一批更新里很多目标共享祖先。只在这次通知内记住判断，下一批仍读最新页面结构。
+    type TargetInfo = { owner: Unit | null; ours: boolean; excluded: boolean };
+    const infos = new WeakMap<Node, TargetInfo>();
+    const filter = this.scope ? scopeFilter(this.scope) : undefined;
+    const excludedByRule = this.rule?.exclude?.join(',');
+    const rootInfo: TargetInfo = { owner: null, ours: false, excluded: false };
+    const ownUiInfo: TargetInfo = { owner: null, ours: true, excluded: true };
+    const classify = (node: Node): TargetInfo => {
+      const chain: Node[] = [];
+      let parent: Node | null = node;
+      while (parent && !infos.has(parent)) {
+        if (isOurs(parent)) { infos.set(parent, ownUiInfo); break; }
+        chain.push(parent);
+        parent = parent.parentNode;
+      }
+      let info = (parent && infos.get(parent)) || rootInfo;
+      for (let i = chain.length - 1; i >= 0; i--) {
+        const item = chain[i];
+        if (!info.ours && item.nodeType === 1) {
+          const el = item as Element;
+          if (!info.excluded && (isSkipped(el) || (excludedByRule && el.matches(excludedByRule)) || filter?.(el) === 0)) {
+            info = { ...info, excluded: true };
+          }
+        }
+        const owner = this.nodeUnit.get(item);
+        if (owner && !info.ours) info = { ...info, owner };
+        infos.set(item, info);
+      }
+      return info;
+    };
     let relevant = false;
+    const previousDirtyCount = this.dirty.size;
+    let visitedRemoved = 0;
+    let sweepDetached = false;
     for (const r of records) {
-      if (insideOurs(r.target)) continue;
-      if (r.type === 'characterData') {
-        const u = this.unitOf(r.target);
+      const info = classify(r.target);
+      if (info.ours) continue;
+      // 已认领的段内仍需更新代码/图标占位符；未认领的编辑器、SVG、站点排除区域不会产生新段落。
+      const accept = !info.excluded || !!info.owner;
+      if (r.type === 'characterData' || r.type === 'attributes') {
+        if (!accept) continue;
+        if (r.type === 'attributes') {
+          const el = r.target as Element;
+          if (el.getAttribute(r.attributeName!) === r.oldValue) continue;
+          // 预渲染并隐藏的菜单在首次扫描时被跳过；只扫描刚展开的子树。
+          if (r.attributeName === 'hidden' && !el.hasAttribute('hidden')) {
+            this.added.add(el);
+            relevant = true;
+          }
+        }
+        const u = info.owner;
         if (u) {
           this.dirty.add(u);
+          relevant = true;
+        } else if (r.type === 'characterData' && hasLetters((r.target as Text).data)) {
+          // 聊天流/虚拟列表常先创建空文本节点，随后只改 data，首次写入也需要被发现。
+          this.added.add(r.target);
           relevant = true;
         }
         continue;
       }
       let changed = false;
-      r.addedNodes.forEach((n) => {
+      if (accept) r.addedNodes.forEach((n) => {
         if (isOurs(n)) return;
         changed = true;
         this.added.add(n);
       });
       r.removedNodes.forEach((n) => {
-        if (!isOurs(n)) changed = true;
+        if (isOurs(n)) return;
+        if (accept) changed = true;
+        const owner = this.nodeUnit.get(n);
+        if (owner) {
+          this.dirty.add(owner);
+          if (!owner.whole && owner.root === r.target) this.regroup.add(owner);
+        }
+        if (!sweepDetached && n.nodeType === 1 && !n.isConnected) {
+          // 小子树按节点检查；被删除的图表可能远大于所有已跟踪的段落，此时只查一次索引。
+          const walker = document.createTreeWalker(n, NodeFilter.SHOW_ELEMENT);
+          do {
+            if (++visitedRemoved > this.byTarget.size) { sweepDetached = true; break; }
+            this.byTarget.get(walker.currentNode as Element)?.forEach((u) => this.dirty.add(u));
+          } while (walker.nextNode());
+        }
       });
       if (changed) {
+        this.changedRun(r.target, r.previousSibling, 'previousSibling');
+        this.changedRun(r.target, r.nextSibling, 'nextSibling');
         relevant = true;
-        const u = this.unitOf(r.target);
-        if (u) this.dirty.add(u);
+        if (info.owner) this.dirty.add(info.owner);
       }
     }
-    if (!relevant) return;
+    if (sweepDetached) {
+      for (const [el, units] of this.byTarget) {
+        if (!el.isConnected) for (const unit of units) this.dirty.add(unit);
+      }
+    }
+    if (!relevant && this.dirty.size === previousDirtyCount) return;
     const now = performance.now();
     if (!this.moTimer) this.moFirst = now;
     clearTimeout(this.moTimer);
@@ -676,43 +884,64 @@ export class PageTranslator {
   private processMutations() {
     this.moTimer = 0;
     if (!this.active) return;
-    // 已移除的单元
-    for (const u of this.units.values()) if (!u.root.isConnected) this.removeUnit(u);
+    for (const u of this.regroup) {
+      if (!this.units.has(u.id)) continue;
+      this.removeUnit(u);
+      if (u.root.isConnected) this.added.add(u.root);
+    }
+    this.regroup.clear();
     // 内容变了的单元：重新序列化，文字真的变了才重翻
     for (const u of this.dirty) {
       if (!this.units.has(u.id)) continue;
-      const nodes = u.whole ? Array.from(u.root.childNodes).filter((n) => !isOurs(n)) : u.nodes.filter((n) => n.isConnected);
-      if (!nodes.length) {
+      if (!u.root.isConnected || u.mountTimer !== undefined) {
         this.removeUnit(u);
+        if (u.root.isConnected) this.added.add(u.root);
         continue;
       }
-      const ser = serialize(nodes);
-      if (ser.text !== u.ser.text || u.state === 'idle') {
-        const wasRequested = u.state !== 'idle';
+      if (u.whole && this.added.size && hasBlockChild(u.root)) {
+        // 菜单展开时，原来的短标签可能变成容器。按新结构分段，避免每次更新重翻整个菜单。
+        this.removeUnit(u);
+        this.added.add(u.root);
+        continue;
+      }
+      const nodes = u.whole ? Array.from(u.root.childNodes).filter((n) => !isOurs(n)) : u.nodes.filter((n) => n.parentNode === u.root);
+      if (!nodes.length) { this.removeUnit(u); continue; }
+      if (!u.whole) {
+        for (const n of u.nodes) if (n.parentNode !== u.root) this.nodeUnit.delete(n);
+        u.nodes = nodes;
+      }
+      if (u.state === 'idle') { u.nodes = nodes; continue; }
+      const fresh = serialize(nodes);
+      if (fresh.text !== u.ser.text) {
         this.resetUnit(u);
         u.nodes = nodes;
         if (!u.whole) nodes.forEach((n) => this.nodeUnit.set(n, u));
-        if (wasRequested && this.io) {
+        if (this.io) {
           this.io.unobserve(u.root);
           this.io.observe(u.root);
         }
+      } else if (u.state === 'requested') {
+        this.restoreRecycled(u, nodes, fresh);
       }
     }
     this.dirty.clear();
     // 新加入的内容
-    const specs: UnitSpec[] = [];
+    const roots = new Set<Element>();
     // 单页应用换了一整页内容：正文容器已不在，重新认一次
     if (this.scope?.root && !this.scope.root.isConnected) this.scope = detectContent();
-    const opts = this.scanOpts();
     for (const n of this.added) {
-      if (!n.isConnected || insideOurs(n) || this.unitOf(n)) continue;
+      if (!n.isConnected) continue;
       const el = n.nodeType === 1 ? (n as Element) : n.parentElement;
-      if (!el || el === document.documentElement) continue;
-      if (this.scope && !scopeAllows(this.scope, el)) continue;
-      specs.push(...scan(el, opts));
+      if (el && el !== document.documentElement) roots.add(el);
     }
     this.added.clear();
-    if (specs.length) this.addUnits(specs);
+    // 框架常在同一轮先挂容器再加子孙。每棵子树只扫一次，立即认领找到的段落。
+    for (const el of roots) {
+      let parent = el.parentElement;
+      while (parent && !roots.has(parent)) parent = parent.parentElement;
+      if (!parent) this.scanRoots.add(el);
+    }
+    if (!this.scanTimer && this.scanRoots.size) this.drainScan();
     this.emit();
   }
 
@@ -721,19 +950,20 @@ export class PageTranslator {
   }
 }
 
-function waitFor(selector: string, timeout: number): Promise<void> {
+function waitFor(selector: string, timeout: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
-    if (document.querySelector(selector)) return resolve();
-    const mo = new MutationObserver(() => {
-      if (document.querySelector(selector)) {
-        mo.disconnect();
-        resolve();
-      }
-    });
-    mo.observe(document.documentElement, { childList: true, subtree: true });
-    setTimeout(() => {
+    if (signal.aborted || document.querySelector(selector)) return resolve();
+    const finish = () => {
       mo.disconnect();
+      clearTimeout(timer);
+      signal.removeEventListener('abort', finish);
       resolve();
-    }, timeout);
+    };
+    const mo = new MutationObserver(() => {
+      if (document.querySelector(selector)) finish();
+    });
+    const timer = window.setTimeout(finish, timeout);
+    signal.addEventListener('abort', finish, { once: true });
+    mo.observe(document.documentElement, { childList: true, subtree: true });
   });
 }

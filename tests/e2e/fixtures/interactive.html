@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Dynamic menu</title>
+<style>body{font:16px/1.4 system-ui;margin:24px}p{margin:6px 0}</style>
+<main>
+  <button id="toggle-menu" translate="no" aria-expanded="false">Toggle menu</button>
+  <button id="action" translate="no" data-clicks="0">Page action</button>
+  <p id="intro">Read the current settings before opening the menu.</p>
+  <div id="outlet"></div>
+</main>
+<script>
+  const menu = document.createElement('section');
+  menu.id = 'menu';
+  document.querySelector('#action').onclick = (event) => {
+    const button = event.currentTarget;
+    button.dataset.clicks = String(Number(button.dataset.clicks) + 1);
+  };
+  document.querySelector('#toggle-menu').onclick = (event) => {
+    if (menu.isConnected) menu.remove();
+    else {
+      document.querySelector('#outlet').append(menu);
+      if (!menu.firstChild) {
+        // 模拟网页逐层创建已挂载的菜单，重新打开时复用节点。
+        let parent = menu;
+        for (let i = 0; i < 32; i++) {
+          const child = document.createElement('div');
+          parent.append(child);
+          parent = child;
+        }
+        for (const text of ['Choose your language.', 'Open your preferences.', 'Return to the article.']) {
+          const row = document.createElement('p');
+          row.textContent = text;
+          parent.append(row);
+        }
+      }
+    }
+    event.currentTarget.setAttribute('aria-expanded', String(menu.isConnected));
+  };
+</script></html>

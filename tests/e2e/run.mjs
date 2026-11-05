@@ -14,6 +14,13 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { checkDocumentTranslationHints } from './root-hint.mjs';
+import { checkRenderPressure } from './render-pressure.mjs';
+import { checkLongText } from './long-text.mjs';
+import { checkMutationNoise } from './mutation-noise.mjs';
+import { checkDynamicGrid } from './dynamic-grid.mjs';
+import { checkRecycledContent } from './recycled.mjs';
+import { checkInteractivePage } from './interactive.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // 默认用 build-ui.mjs 的假后端构建；没有就退回正式构建
@@ -850,6 +857,13 @@ try {
     }
   });
 
+  await checkInteractivePage(ctx, base, step);
+  await checkDynamicGrid(ctx, base, step);
+  await checkRecycledContent(ctx, base, step);
+  await checkRenderPressure(ctx, step);
+  await checkMutationNoise(ctx, base, step);
+  await checkLongText(ctx, base, step);
+  await checkDocumentTranslationHints(ctx, base, step);
   await step('没有页面脚本错误', async () => assert.deepEqual(errors, []));
 } finally {
   await ctx.close();

@@ -204,8 +204,14 @@ test('quota-qps: 等实际发送gate时取消，零永久提交且下一有效�
     { limits: { maxChars: 1200, maxSegments: 1, concurrency: 6, qps: 10 } },
     { fetch: async (_url, init) => { calls.push({ text: init.body, at: performance.now() }); return new Response('译文'); } });
   local.beforeSet = async (next) => { if (!slowed && Object.keys(next['backend.usage.pending'] ?? {}).length) { slowed = true; await delay(150); } };
-  const first = run(core, 'first'), abort = new AbortController(), second = run(core, 'cancelled', abort.signal), rejected = assert.rejects(second, { name: 'AbortError' });
-  await until(() => calls.length === 1 && pendingCount(local) > 0); abort.abort(); await rejected; await first;
+  // 缓存摘要是异步的。先让 first 进入慢 journal，否则 cancelled 可能抢先发送并已经完成。
+  const first = run(core, 'first');
+  await until(() => slowed);
+  const abort = new AbortController();
+  const second = run(core, 'cancelled', abort.signal);
+  const rejected = assert.rejects(second, { name: 'AbortError' });
+  await until(() => calls[0]?.text === 'first' && Object.values(local.data['backend.usage.pending'] ?? {}).some(record => record.amount === 'cancelled'.length));
+  abort.abort(); await rejected; await first;
   await run(core, 'third'); assert.deepEqual(calls.map((x) => x.text), ['first', 'third']);
   assert.ok(calls[1].at - calls[0].at >= 90); assert.ok(calls[1].at - calls[0].at < 190, '不重复等两份100ms间隔');
   assert.equal(local.data['backend.usage'].fixture.used, 10); assert.equal(pendingCount(local), 0);

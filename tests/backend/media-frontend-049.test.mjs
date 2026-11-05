@@ -84,7 +84,7 @@ function imageHarness(ocr) {
     readImagePixels:async()=>null,L:(zh)=>zh,groupLines:()=>[{text:'Hello world',patches:[],stage:'pending'}],looksLikeTarget:()=>false,
     hostMatches:()=>false,location:{href:'https://fixture.test',hostname:'fixture.test'},document:{title:'fixture'},stopScramble:()=>{},
   });
-  const image=Object.create(Image.prototype);Object.assign(image,{states:new WeakMap(),live:new Set(),queue:[],canCancel:true,ro:{unobserve(){}},settings:{sourceLang:'en',targetLang:'zh',mode:'fast',sensitive:[]},client:{send(...v){calls.push(['send',...v]);},cancel(id){calls.push(['cancel',id]);}},source:async()=>({url:'fixture'}),buildStage(){}});
+  const image=Object.create(Image.prototype);Object.assign(image,{states:new WeakMap(),live:new Set(),visible:new Set(),visibility:{unobserve(){}},removals:{disconnect(){}},queue:[],canCancel:true,ro:{unobserve(){}},settings:{sourceLang:'en',targetLang:'zh',mode:'fast',sensitive:[]},client:{send(...v){calls.push(['send',...v]);},cancel(id){calls.push(['cancel',id]);}},source:async()=>({url:'fixture'}),buildStage(){}});
   const img={isConnected:true,naturalWidth:100,naturalHeight:100};const st={status:'loading',host:{remove(){}}};image.states.set(img,st);image.live.add(img);
   return {image,img,st,calls};
 }

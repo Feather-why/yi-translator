@@ -425,7 +425,7 @@ function local(env: Env): HTMLElement[] {
     h('h2', null, L('③ 部署本地模型（Windows）', '③ Deploy the local model (Windows)')),
     h('div', { class: 'gd-card' },
       h('h3', null, L('推荐：独立安装包', 'Recommended: standalone installer')),
-      h('p', null, L('取得与扩展一起发布的 yi-local-setup-0.2.13-windows-x64.zip，解压到一个固定文件夹，双击里面的 setup.cmd，按提示输入扩展 ID。安装器会下载并校验模型和运行程序，不需要 Node.js 或项目源码。', 'Get yi-local-setup-0.2.13-windows-x64.zip distributed with this extension, extract it into a permanent folder, run setup.cmd, and enter the extension ID when prompted. It downloads and verifies the model and runtime; Node.js and the source project are not required.')),
+      h('p', null, L('取得与扩展一起发布的 yi-local-setup-0.2.17-windows-x64.zip，解压到一个固定文件夹，双击里面的 setup.cmd，按提示输入扩展 ID。安装器会下载并校验模型和运行程序，不需要 Node.js 或项目源码。', 'Get yi-local-setup-0.2.17-windows-x64.zip distributed with this extension, extract it into a permanent folder, run setup.cmd, and enter the extension ID when prompted. It downloads and verifies the model and runtime; Node.js and the source project are not required.')),
       h('p', { class: 'muted' }, L('下面保留源码方式的手动部署步骤；已用独立安装包完成安装的话，可以直接检测并启用。', 'The manual source-project instructions remain below. If the standalone installer has completed, continue with Detect and enable.')),
     ),
     h('div', { class: 'gd-card' },

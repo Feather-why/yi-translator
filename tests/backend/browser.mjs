@@ -2,9 +2,10 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import path from 'node:path';
 import os from 'node:os';
-import { mkdtemp, realpath, rm, access } from 'node:fs/promises';
+import { mkdtemp, realpath, rm, access, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { checkInteractivePage } from '../e2e/interactive.mjs';
 import { isolateAutomaticWelcome } from './browser-test-isolation.mjs';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
@@ -32,6 +33,10 @@ const fixtures = [
   { source: 'world', output: '世界', kind: 'anchor', numbered: false },
   { source: 'Hello.', output: '你好。', kind: 'probe', numbered: true },
   { source: pageSource, output: pageTranslation, kind: 'page', numbered: false },
+  { source: 'Read the current settings before opening the menu.', output: '打开菜单前请阅读当前设置。', kind: 'intro' },
+  { source: 'Choose your language.', output: '选择语言。', kind: 'menu' },
+  { source: 'Open your preferences.', output: '打开偏好设置。', kind: 'menu' },
+  { source: 'Return to the article.', output: '返回文章。', kind: 'menu' },
 ].sort((a, b) => b.source.length - a.source.length);
 const callsOf = (kind) => requests.filter((entry) => entry.kind === kind).length;
 let healthChecks = 0;
@@ -39,6 +44,10 @@ let context;
 
 const server = http.createServer(async (request, response) => {
   try {
+    if (request.url === '/interactive.html' && request.method === 'GET') {
+      response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(await readFile(new URL('../e2e/fixtures/interactive.html', import.meta.url)));
+      return;
+    }
     if (request.url === '/article' && request.method === 'GET') {
       response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end('<!doctype html><html lang="en"><head><title>Integration fixture</title></head><body><article style="max-width:650px;margin:60px auto"><p id="source">Browser <a href="/original-link">integration</a> translation.</p></article></body></html>');
       return;
@@ -287,6 +296,15 @@ try {
   assert.deepEqual(pageErrors, []);
   await article.close();
   console.log('  ✓ 真实网页点击 → 内容脚本 → 后台 → SSE HTTP → partial/final 渲染、链接与原文还原');
+  await checkInteractivePage(context, address, async (name, run) => {
+    await run();
+    console.log('  ✓ ' + name);
+  });
+  // 127.0.0.1 属于敏感站点。菜单卸载后再次展开可以重新翻译，每个条目在两轮稳定展示中至多两次。
+  for (const row of fixtures.filter(entry => entry.kind === 'menu')) {
+    const hits = requests.filter(entry => entry.kind === 'menu' && entry.input.messages[0].content.endsWith(row.source)).length;
+    assert.ok(hits >= 1 && hits <= 2, row.source + ' 的翻译请求数异常：' + hits);
+  }
   console.log(`浏览器后端集成验收通过：${requests.length} 次本机回放请求，${healthChecks} 次健康检查。`);
 } finally {
   if (context) await context.close();

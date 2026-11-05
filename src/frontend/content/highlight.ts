@@ -11,73 +11,73 @@ import type { AlignResult } from '../../shared/protocol';
 import { rpc } from '../../shared/rpc';
 import { finishReveal } from '../ui/scramble';
 import { isOurs } from './dom';
+import { MappedText, runBefore, type TextRun } from './text-runs';
 import type { PageTranslator, Part, Unit } from './page';
 
 interface TextMap {
   text: string;
-  nodes: Text[];
-  offs: number[];
-  first: Map<Text, number>;
-  bounds: { at: number; tx: Element }[];
+  runs: TextRun[];
+  first: Map<Text, { start: number; end: number; runStart: number; runEnd: number }>;
+  bounds: Map<Element, number>;
 }
 
 const SKIP = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE']);
 
 export function buildMap(nodes: Iterable<Node>): TextMap {
-  const m: TextMap = { text: '', nodes: [], offs: [], first: new Map(), bounds: [] };
-  let lastSpace = true;
-  const walk = (n: Node) => {
+  const out = new MappedText(true);
+  const first: TextMap['first'] = new Map();
+  const bounds: TextMap['bounds'] = new Map();
+  const stack = Array.from(nodes).reverse();
+  while (stack.length) {
+    const n = stack.pop()!;
     if (n.nodeType === 3) {
       const t = n as Text;
-      const d = t.data;
-      m.first.set(t, m.text.length);
-      for (let i = 0; i < d.length; i++) {
-        const ws = /\s/.test(d[i]);
-        if (ws && lastSpace) continue;
-        m.text += ws ? ' ' : d[i];
-        m.nodes.push(t);
-        m.offs.push(i);
-        lastSpace = ws;
+      const start = out.length, runStart = out.runs.length;
+      out.add(t);
+      first.set(t, { start, end: out.length, runStart, runEnd: out.runs.length });
+    } else if (n.nodeType === 1) {
+      const el = n as Element;
+      if (el.localName === 'tx-t') bounds.set(el, out.length);
+      else if (!isOurs(el) && !SKIP.has(el.tagName)) {
+        for (let child = el.lastChild; child; child = child.previousSibling) stack.push(child);
       }
-      return;
     }
-    if (n.nodeType !== 1) return;
-    const el = n as Element;
-    if (el.localName === 'tx-t') {
-      m.bounds.push({ at: m.text.length, tx: el });
-      return;
-    }
-    if (isOurs(el) || SKIP.has(el.tagName)) return;
-    el.childNodes.forEach(walk);
-  };
-  for (const n of nodes) walk(n);
-  return m;
+  }
+  return { text: out.text(), runs: out.runs, first, bounds };
 }
 
-/** 选区端点 → 文本下标。 */
+/** 选区端点 → 文本下标。折叠的空白落在下一个保留字符之前。 */
 function indexOf(map: TextMap, container: Node, offset: number): number {
   if (container.nodeType === 3) {
-    const start = map.first.get(container as Text);
-    if (start === undefined) return -1;
-    let i = start;
-    while (i < map.nodes.length && map.nodes[i] === container && map.offs[i] < offset) i++;
-    return i;
+    const t = map.first.get(container as Text);
+    if (!t) return -1;
+    let lo = t.runStart, hi = t.runEnd;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1, r = map.runs[mid];
+      if (r.offset + r.end - r.start <= offset) lo = mid + 1;
+      else hi = mid;
+    }
+    if (lo === t.runEnd) return t.end;
+    const r = map.runs[lo];
+    return r.start + Math.max(0, offset - r.offset);
   }
   const child = container.childNodes[offset] ?? null;
   for (const [t, idx] of map.first) {
     if (child) {
-      if (child === t || child.contains(t) || child.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING) return idx;
-    } else if (!container.contains(t) && container.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING) return idx;
+      if (child === t || child.contains(t) || child.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING) return idx.start;
+    } else if (!container.contains(t) && container.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING) return idx.start;
   }
   return -1;
 }
 
 function rangeOf(map: TextMap, from: number, to: number): Range | null {
-  if (to <= from || from < 0 || to > map.nodes.length) return null;
+  if (to <= from || from < 0 || to > map.text.length) return null;
+  const first = runBefore(map.runs, from + 1), last = runBefore(map.runs, to);
+  if (!first || !last) return null;
   const r = document.createRange();
   try {
-    r.setStart(map.nodes[from], map.offs[from]);
-    r.setEnd(map.nodes[to - 1], map.offs[to - 1] + 1);
+    r.setStart(first.node, first.offset + from - first.start);
+    r.setEnd(last.node, last.offset + to - last.start);
   } catch {
     return null;
   }
@@ -93,8 +93,7 @@ function spans(unit: Unit, map: TextMap): [number, number][] {
   const out: [number, number][] = [];
   let prev = 0;
   for (const p of unit.parts) {
-    const b = map.bounds.find((x) => x.tx === p.tx);
-    const end = b ? b.at : map.text.length;
+    const end = map.bounds.get(p.tx) ?? map.text.length;
     out.push([prev, end]);
     prev = end;
   }
@@ -195,6 +194,7 @@ export class LinkedHighlighter {
   private hovering = false;
   private hoverRaf = 0;
   private hoverKey = '';
+  private hoverNode: Text | null = null;
 
   start(): void {
     if (!highlightSupported) return;
@@ -247,6 +247,7 @@ export class LinkedHighlighter {
     if (!this.hovering) return;
     this.hovering = false;
     this.hoverKey = '';
+    this.hoverNode = null;
     this.ticket++;
     this.clear();
     // 有划选的话恢复划选的高亮
@@ -258,15 +259,18 @@ export class LinkedHighlighter {
     const hit = pos && this.page.locate(pos.node);
     if (!pos || !hit) {
       if (this.hovering) {
+        this.ticket++;
         this.hoverKey = '';
+        this.hoverNode = null;
         this.clear();
       }
       return;
     }
     const key = `${(pos.node as Text).data?.length}|${pos.offset}`;
-    if (this.hovering && key === this.hoverKey) return;
+    if (this.hovering && pos.node === this.hoverNode && key === this.hoverKey) return;
     this.hovering = true;
     this.hoverKey = key;
+    this.hoverNode = pos.node;
     await this.link(hit, pos.node, pos.offset, pos.node, pos.offset + 1, true);
   }
 
@@ -282,16 +286,31 @@ export class LinkedHighlighter {
 
   /** 按下鼠标时就开始取对齐结果。 */
   private onDown = (e: MouseEvent) => {
+    if (e.button !== 0) return;
     const hit = this.page.locate(e.target as Node);
-    if (!hit) return;
+    if (!hit || !hit.unit.parts.length) return;
     const map = buildMap(srcNodes(hit.unit));
     const sp = spans(hit.unit, map);
-    hit.unit.parts.forEach((p, i) => p.translated && void this.align(p, map.text.slice(sp[i][0], sp[i][1])));
+    // 逐句模式可能有很多译文。只预取实际按下的这一句，真正的选区仍走 selectionchange。
+    let i = hit.part ? hit.unit.parts.indexOf(hit.part) : 0;
+    if (!hit.part && hit.unit.parts.length > 1) {
+      const at = caretAt(e.clientX, e.clientY);
+      if (!at) return;
+      const offset = indexOf(map, at.node, at.offset);
+      i = sp.findIndex(([start, end]) => offset >= start && offset < end);
+    }
+    const part = hit.unit.parts[i];
+    if (part?.translated) void this.align(part, map.text.slice(sp[i][0], sp[i][1]));
   };
 
-  private align(part: Part, source: string): Promise<AlignResult | null> {
-    finishReveal(part.tx); // 定格动画中的文字是打乱的，先让它结束
-    const target = buildMap(part.tx.childNodes).text;
+  private targetMap(part: Part): TextMap {
+    finishReveal(part.tx);
+    return buildMap(part.tx.childNodes);
+  }
+
+  private align(part: Part, source: string, target = this.targetMap(part).text): Promise<AlignResult | null> {
+    // 正式对齐服务每侧接受至多一万个 UTF-16 字符。超出时保留整句提示，避免重复发送超限消息。
+    if (source.length > 10_000 || target.length > 10_000) return Promise.resolve(null);
     // 键里放完整的原文和译文：同样长度的改译、重翻、换服务后都会重新取
     const key = `${part.segId}|${part.stage}|${source}\u0000${target}`;
     let p = this.cache.get(key);
@@ -347,12 +366,12 @@ export class LinkedHighlighter {
       if (!part?.translated) return this.clear();
       const [a, b] = sp[pi];
       if (e < 0 || e > b) e = b;
-      const tgt = buildMap(part.tx.childNodes);
+      const tgt = this.targetMap(part);
       const soft = document.createRange();
       soft.selectNodeContents(part.tx);
       setHighlight('tx-link-soft', [soft], 0);
       if (!word) setHighlight('tx-link', []);
-      const al = await this.align(part, src.text.slice(a, b));
+      const al = await this.align(part, src.text.slice(a, b), tgt.text);
       if (t !== this.ticket || !al) return;
       // 整句 / 短语范围（只在划选时用；Alt 悬停和单词选择保持词级）
       const m = word ? null : matchSpans(al.spans, src.text.slice(a, b), s - a, e - a, 'src');
@@ -375,7 +394,7 @@ export class LinkedHighlighter {
       const pi = unit.parts.indexOf(part);
       if (pi < 0 || !part.translated) return this.clear();
       const [a, b] = sp[pi];
-      const tgt = buildMap(part.tx.childNodes);
+      const tgt = this.targetMap(part);
       const s = indexOf(tgt, sc, so);
       let e = indexOf(tgt, ec, eo);
       if (s < 0) return this.clear();
@@ -383,7 +402,7 @@ export class LinkedHighlighter {
       const soft = rangeOf(src, a, b);
       setHighlight('tx-link-soft', soft ? [soft] : [], 0);
       if (!word) setHighlight('tx-link', []);
-      const al = await this.align(part, src.text.slice(a, b));
+      const al = await this.align(part, src.text.slice(a, b), tgt.text);
       if (t !== this.ticket || !al) return;
       const m = word ? null : matchSpans(al.spans, tgt.text, s, e, 'tgt');
       if (m?.soft.length) setHighlight('tx-link-soft', m.soft.map(([x, y]) => rangeOf(src, x + a, y + a)).filter((x): x is Range => !!x), 0);

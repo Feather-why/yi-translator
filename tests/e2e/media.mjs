@@ -1,10 +1,10 @@
 /**
- * 媒体功能的端到端测试：图片翻译覆盖层、PDF 双栏阅读器。
+ * 媒体功能的端到端测试：图片翻译覆盖层、PDF 双栏阅读器和动态播放器。
  *
  *   node tests/e2e/build-ui.mjs && EXT_DIR=.output/ui-test node tests/e2e/media.mjs
  *
  * 需要后端支持 B5（backend:capabilities.media）。真实后端第一次做 OCR 要下载 PP-OCRv5 模型，
- * 所以超时设得比较长。YouTube 字幕只注入 youtube.com，这里不测。
+ * 所以超时设得比较长。假后端构建允许在本机夹具测试 YouTube 字幕。
  */
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -13,6 +13,8 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { checkPlayerUpdates } from './player-updates.mjs';
+import { checkImageGallery } from './image-gallery.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // 默认用 build-ui.mjs 的假后端构建；没有就退回正式构建
@@ -64,6 +66,51 @@ try {
   await step('鼠标移到大图上出现翻译按钮', async () => {
     await page.locator('#sign').hover({ position: { x: 300, y: 150 } });
     await page.waitForSelector('tx-ui .img-btn.on', { timeout: 3000 });
+  });
+  await step('图片入口给网页原有的右上角按钮留出点击位置', async () => {
+    const b = await page.locator('tx-ui .img-btn').boundingBox();
+    const native = await page.locator('#expand').boundingBox();
+    assert.ok(b.x + b.width <= native.x || b.y >= native.y + native.height);
+    await page.locator('#expand').click({ timeout: 2000 });
+    assert.equal(await page.locator('#expand').getAttribute('data-clicked'), 'yes');
+  });
+  await step('拖动图片入口让出后来出现的按钮，松开不翻译，重新悬停和调整图片大小后仍在选定位置', async () => {
+    const img = page.locator('#sign');
+    const btn = page.locator('tx-ui .img-btn');
+    await img.hover({ position: { x: 300, y: 150 } });
+    await btn.hover();
+    const b = await btn.boundingBox();
+    const r = await img.boundingBox();
+    const details = page.locator('#details');
+    await details.evaluate(el => { el.hidden = false; });
+    const overlaps = await page.evaluate(() => {
+      const a = document.querySelector('#details').getBoundingClientRect();
+      const b = document.querySelector('tx-ui').shadowRoot.querySelector('.img-btn').getBoundingClientRect();
+      return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    });
+    assert.ok(overlaps, '网页延迟显示的控件应和旧位置重合');
+    await page.mouse.move(b.x + 10, b.y + 10);
+    await page.mouse.down();
+    await page.mouse.move(r.x + r.width + 30, r.y + r.height + 30, { steps: 9 });
+    await page.mouse.up();
+    assert.equal(await page.locator('tx-ocr').count(), 0, '松开拖动不应开始识别');
+    await details.click({ timeout: 1500 });
+    assert.equal(await details.getAttribute('data-clicked'), 'yes');
+    await page.mouse.move(1, 1);
+    await page.waitForSelector('tx-ui .img-btn.on', { state: 'detached' });
+    await img.hover({ position: { x: 300, y: 150 } });
+    const atBottomRight = () => page.waitForFunction(() => {
+      const r = document.querySelector('#sign').getBoundingClientRect();
+      const btn = document.querySelector('tx-ui').shadowRoot.querySelector('.img-btn.on');
+      if (!btn) return false;
+      const b = btn.getBoundingClientRect();
+      return Math.abs(r.right - b.right - 8) <= 1 && Math.abs(Math.min(innerHeight, r.bottom) - b.bottom - 8) <= 1;
+    }, null, { timeout: 2000 });
+    await atBottomRight();
+    await img.evaluate(el => { el.style.width = '560px'; });
+    await atBottomRight();
+    await img.evaluate(el => { el.style.width = ''; });
+    await atBottomRight();
   });
   await step('点击后图片上出现译文覆盖层，且不改变页面排版', async () => {
     const before = await page.evaluate(() => document.body.scrollHeight);
@@ -352,6 +399,13 @@ try {
     assert.ok(await pdf.locator('.hl-layer div.on').count() >= 1);
   });
 
+  // 只有界面测试构建会在本机测试域名注入字幕脚本。
+  const manifest = JSON.parse(await readFile(path.join(extDir, 'manifest.json'), 'utf8'));
+  const localPlayer = manifest.content_scripts.some(script => script.matches.includes('http://127.0.0.1/*') && script.js.includes('youtube.js'));
+  if (localPlayer) {
+    await checkImageGallery(ctx, base, step);
+    await checkPlayerUpdates(ctx, base, step);
+  }
   await step('没有页面脚本错误', async () => assert.deepEqual(errors, []));
 } finally {
   await ctx.close();

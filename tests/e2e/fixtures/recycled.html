@@ -1,0 +1,17 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Recycled rows</title>
+<main>
+  <button id="action" translate="no">Page action</button>
+  <p id="empty"></p>
+  <p id="same">Products 15.</p>
+  <p id="linked">Read <a href="#old">details</a> for <code>OLD</code>.</p>
+  <p id="attr">Visit <a href="#before">details</a>.</p>
+  <div id="list"><p id="live">Live 1.</p><p id="untouched">Products 44.</p></div>
+  <section id="runs">Menu 1 <b>and 2</b><div id="footer">Footer 81.</div></section>
+  <p id="sentences">This is the first sentence. Here is another sentence.</p>
+</main>
+<script>
+  document.querySelector('#empty').append(document.createTextNode(''));
+  const action = document.querySelector('#action');
+  action.dataset.hits = '0';
+  action.onclick = () => action.dataset.hits = String(Number(action.dataset.hits) + 1);
+</script></html>

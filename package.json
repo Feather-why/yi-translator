@@ -1,7 +1,7 @@
 {
   "name": "translate-ext",
   "displayName": "译 · 本地优先的网页翻译",
-  "version": "0.2.13",
+  "version": "0.2.17",
   "private": true,
   "type": "module",
   "description": "开源、本地优先、快速的浏览器翻译扩展：整页双语对照、划词小窗、词典、综合模式、多免费接口调度、本地/远程模型。",

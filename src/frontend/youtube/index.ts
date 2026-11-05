@@ -127,12 +127,6 @@ export async function startYoutube(): Promise<void> {
   if (window.top !== window) return;
   let settings = await loadUiSettings();
   setUiLang(settings.uiLang);
-  onUiSettingsChanged((s) => {
-    settings = s;
-    syncButton();
-    menu.update(s.subtitles);
-    render(true);
-  });
   const saveSub = (patch: Partial<UiSettings['subtitles']>) => void saveUiSettings({ subtitles: { ...settings.subtitles, ...patch } });
   const menu = new SubtitleMenu(saveSub);
   const panel = new TranscriptPanel(
@@ -150,18 +144,29 @@ export async function startYoutube(): Promise<void> {
   let track: Track | null = null;
   const pendingBodies: { url: string; body: string }[] = [];
   let ready = false;
-
-  window.addEventListener('message', (e) => {
-    if (e.source !== window || !e.data || e.data[YT_MESSAGE] !== true) return;
-    const { url, body } = e.data as { url: string; body: string };
-    if (!ready) pendingBodies.push({ url, body });
-    else onTimedText(url, body);
+  const stopWatchingSettings = onUiSettingsChanged((s) => {
+    settings = s;
+    if (ready) {
+      menu.update(s.subtitles);
+      attach(true);
+    }
   });
 
+  const receiveTimedText = (e: MessageEvent) => {
+    if (e.source !== window || !e.data || e.data[YT_MESSAGE] !== true) return;
+    const { url, body } = e.data as { url: string; body: string };
+    if (typeof url !== 'string' || typeof body !== 'string') return;
+    if (!ready) pendingBodies.push({ url, body });
+    else onTimedText(url, body);
+  };
+  window.addEventListener('message', receiveTimedText);
+
   const caps = await mediaCaps();
-  if (!caps.subtitles) return;
-  ready = true;
-  pendingBodies.splice(0).forEach(({ url, body }) => onTimedText(url, body));
+  if (!caps.subtitles) {
+    window.removeEventListener('message', receiveTimedText);
+    stopWatchingSettings();
+    return;
+  }
 
   const videoId = () => new URL(location.href).searchParams.get('v') || '';
   const player = () => document.querySelector<HTMLElement>('#movie_player, .html5-video-player');
@@ -218,10 +223,13 @@ export async function startYoutube(): Promise<void> {
         const batch: Cue[] = [];
         let chars = 0;
         for (const c of order) {
+          // 超过后端单行上限时保留原文，继续处理后续字幕，不能反复派发空批次。
+          if (c.text.length > 12_000) { t.requested.add(c.id); continue; }
           if (batch.length >= 80 || chars + c.text.length > 12000) break;
           batch.push(c);
           chars += c.text.length;
         }
+        if (!batch.length) break;
         batch.sort((a, b) => a.start - b.start); // 按时间顺序发，后端用相邻行做上下文
         batch.forEach((c) => t.requested.add(c.id));
         try {
@@ -251,9 +259,17 @@ export async function startYoutube(): Promise<void> {
 
   const fallbackLines = new Map<string, string | null>(); // 原文 → 译文（null = 翻译中）
   let fallbackText = '';
-  const fallbackObserver = new MutationObserver(() => {
-    if (track || !settings.subtitles.enabled) return;
-    const segs = [...document.querySelectorAll('.ytp-caption-window-container .ytp-caption-segment')];
+  let captionRoot: Element | null = null;
+  let captionTimer = 0;
+  // 原生字幕常逐词改 DOM。合并短时间内的变化，只翻译当前仍可见的最新文本。
+  function scheduleCaptionRead() {
+    if (!captionTimer && !track && settings.subtitles.enabled) captionTimer = window.setTimeout(readCaption, 80);
+  }
+  const fallbackObserver = new MutationObserver(scheduleCaptionRead);
+  function readCaption() {
+    captionTimer = 0;
+    if (!captionRoot?.isConnected || track || !settings.subtitles.enabled || !ccOn()) return;
+    const segs = [...captionRoot.querySelectorAll('.ytp-caption-segment')];
     const text = segs.map((s) => s.textContent ?? '').join(' ').replace(/\s+/g, ' ').trim();
     if (text === fallbackText) return;
     fallbackText = text;
@@ -275,7 +291,7 @@ export async function startYoutube(): Promise<void> {
         .catch(() => fallbackLines.delete(text));
     }
     render(true);
-  });
+  }
 
   /* ---------------- 显示 ---------------- */
 
@@ -436,9 +452,7 @@ export async function startYoutube(): Promise<void> {
 
   /* ---------------- 播放器按钮 ---------------- */
 
-  function syncButton() {
-    const controls = document.querySelector('.ytp-right-controls');
-    if (!controls) return;
+  function syncButton(controls: Element) {
     let btn = controls.querySelector<HTMLButtonElement>('.tx-yt-btn');
     if (!btn) {
       btn = document.createElement('button');
@@ -457,30 +471,63 @@ export async function startYoutube(): Promise<void> {
     btn.title = settings.subtitles.enabled ? L('双语字幕：已开（点击调整）', 'Bilingual subtitles: on (click to adjust)') : L('双语字幕：已关（点击打开设置）', 'Bilingual subtitles: off (click to open settings)');
     btn.setAttribute('aria-label', btn.title);
     if (settings.subtitles.enabled) void translateAround();
+    return btn;
   }
 
-  const attach = () => {
-    syncButton();
+  let controls: Element | null = null;
+  let button: HTMLButtonElement | null = null;
+  let repairTimer = 0;
+  let retryDelay = 0;
+  let lastRepair = -Infinity;
+
+  function attach(force = false) {
+    const nextControls = document.querySelector('.ytp-right-controls');
+    const controlsChanged = controls !== nextControls || (!!nextControls && button?.parentElement !== nextControls);
+    if (controlsChanged || force) {
+      const now = performance.now();
+      if (controlsChanged) {
+        retryDelay = nextControls === controls && now - lastRepair < 5000 ? Math.min(2000, Math.max(100, retryDelay * 2)) : 0;
+        lastRepair = now;
+      }
+      controls = nextControls;
+      button = controls && syncButton(controls);
+    }
     const cont = document.querySelector('.ytp-caption-window-container');
-    if (cont) fallbackObserver.observe(cont, { childList: true, subtree: true, characterData: true });
-    render(true);
-  };
+    const captionsChanged = cont !== captionRoot;
+    if (captionsChanged) {
+      fallbackObserver.disconnect();
+      captionRoot = cont;
+      fallbackText = '';
+      if (cont) fallbackObserver.observe(cont, { childList: true, subtree: true, characterData: true });
+    }
+    if (captionsChanged || force) scheduleCaptionRead();
+    if (controlsChanged || captionsChanged || force) render(true);
+  }
   // 单页应用：换视频时清空，播放器控件出现后再挂按钮
   document.addEventListener('yt-navigate-finish', () => {
     if (track && track.videoId !== videoId()) track = null;
     fallbackLines.clear();
     fallbackText = '';
-    attach();
+    attach(true);
   });
   const mo = new MutationObserver(() => {
-    if (document.querySelector('.ytp-right-controls') && !document.querySelector('.tx-yt-btn')) attach();
+    if (repairTimer || (controls?.isConnected && button?.parentElement === controls && captionRoot?.isConnected)) return;
+    // 播放器可能立即删除自定义控件。把修复留给后续任务，重复删除时延长重试间隔。
+    // 首页/播放列表没有播放器时，连续 DOM 更新也只合并为一次查询。
+    repairTimer = window.setTimeout(() => {
+      repairTimer = 0;
+      attach();
+    }, controls?.isConnected && button?.parentElement !== controls ? Math.max(80, retryDelay) : 80);
   });
   mo.observe(document.documentElement, { childList: true, subtree: true });
   // CC 按钮状态变化
   document.addEventListener('click', (e) => {
-    if ((e.target as Element | null)?.closest?.('.ytp-subtitles-button')) setTimeout(() => render(true), 50);
+    if ((e.target as Element | null)?.closest?.('.ytp-subtitles-button')) setTimeout(() => { scheduleCaptionRead(); render(true); }, 50);
   }, true);
-  attach();
+  // 播放器可在能力探测完成前返回整轨字幕，所有渲染与调度状态就绪后再消费。
+  ready = true;
+  pendingBodies.splice(0).forEach(({ url, body }) => onTimedText(url, body));
+  attach(true);
   kick();
 }
 

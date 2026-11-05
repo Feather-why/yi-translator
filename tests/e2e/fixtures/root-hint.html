@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Research vacancies</title>
+<style>body{font:16px/1.5 system-ui;max-width:54rem;margin:1.5rem auto}#eligibility{margin-top:400vh}</style>
+<body class="vacancies notranslate">
+<p id="campus-news">The campus bookshop is open this Saturday.</p>
+<div id="consent-details" aria-hidden="true" style="display:none"></div>
+<main><article>
+  <h1 id="job-title">Doctoral researcher in coastal ecology</h1>
+  <p id="overview">The research team studies coastal habitats. Read the <a href="#eligibility">eligibility requirements</a> before applying.</p>
+  <section id="duties"><h2>Responsibilities</h2><p>The researcher will coordinate field observations and present findings at regular team meetings.</p></section>
+  <p>The project brings field researchers and laboratory staff together to compare observations collected at different sites. The successful applicant will publish reproducible results, document the sampling process and share the findings with students.</p>
+  <p>Applicants should describe a question they would like to investigate and explain how the available data could help answer it. The group provides supervised laboratory access and training in methods for analysing measurements from coastal surveys.</p>
+  <p id="visual-guidance" aria-hidden="true">Visible instructions for preparing an application.</p>
+  <section id="meta"><h2>Application details</h2>
+    <div class="notranslate" data-preserve><div><p>External reference ID.</p></div></div>
+    <div translate="no" data-preserve><div><p>Original legal wording.</p></div></div>
+    <div class="tx-ignore" data-preserve><div><p>Locally excluded content.</p></div></div>
+    <div contenteditable="true" data-preserve><div><p>Private application draft.</p></div></div>
+  </section>
+  <section><p id="eligibility">Applicants should have relevant field experience.</p></section>
+</article></main>
+<script>
+  const marker = new URLSearchParams(location.search).get('marker');
+  const consent = document.getElementById('consent-details');
+  for (let i = 0; i < 80; i++) {
+    const vendor = document.createElement('p');
+    vendor.textContent = `Preference ${i + 1}: configure how this vendor stores the current session settings.`;
+    consent.append(vendor);
+  }
+  if (marker === 'scope') document.body.classList.remove('notranslate');
+  if (marker === 'html') {
+    document.body.classList.remove('notranslate');
+    document.documentElement.setAttribute('translate', 'no');
+  } else if (marker === 'ignore') document.body.classList.add('tx-ignore');
+</script></body></html>

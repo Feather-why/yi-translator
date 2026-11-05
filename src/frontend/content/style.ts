@@ -45,9 +45,6 @@ tx-t[data-tx-stage="streaming"]::after {
   border-radius: 1px; background: currentColor; opacity: .45; animation: tx-caret .9s steps(2, start) infinite;
 }
 @keyframes tx-caret { to { visibility: hidden; } }
-/* 最终译文替换快速译文 / 流式结果：只轻轻淡入，不再跳字 */
-tx-t[data-tx-swap] { animation: tx-swap .22s ease-out; }
-@keyframes tx-swap { from { opacity: .55; } }
 tx-t[data-tx-stage="pending"]:not([data-tx-fx]), tx-t[data-tx-stage="error"] {
   display: inline !important; margin: 0 0 0 .4em !important; padding: 0 !important; background: none !important;
 }

@@ -33,13 +33,16 @@ export function insideOurs(node: Node | null): boolean {
   return false;
 }
 
-export function isSkipped(el: Element): boolean {
+export function isSkipped(el: Element, parentKnownNonEditable = false): boolean {
   if (SKIP_TAGS.has(el.tagName) || el.localName === 'svg' || el.localName === 'math') return true;
   if (isOurs(el)) return true;
-  if (el.getAttribute('translate') === 'no') return true;
   const cls = el.classList;
-  if (cls.contains('notranslate') || cls.contains('tx-ignore')) return true;
-  if ((el as HTMLElement).isContentEditable) return true;
+  if (cls.contains('tx-ignore')) return true;
+  // AAU 等站点会在整个文档上关闭自动翻译。用户开启本页翻译后，仍尊重各局部区域的免译标记。
+  if (cls.contains('notranslate') || el.getAttribute('translate')?.toLowerCase() === 'no') {
+    if (el !== el.ownerDocument.body && el !== el.ownerDocument.documentElement) return true;
+  }
+  if ((!parentKnownNonEditable || el.hasAttribute('contenteditable')) && (el as HTMLElement).isContentEditable) return true;
   if ((el as HTMLElement).hidden) return true;
   if (el.getAttribute('aria-hidden') === 'true' && !el.textContent?.trim()) return true;
   return false;
@@ -118,9 +121,9 @@ export function isPinnedLabel(el: Element): boolean {
 /** 数字脚注、页码这类，整个当作原样保留。 */
 const FOOTNOTE_RE = /^\s*[\[(]?\d{1,3}[\])]?\s*$/;
 
-export function isAtom(el: Element): boolean {
+export function isAtom(el: Element, knownText?: string): boolean {
   if (ATOM_TAGS.has(el.tagName) || el.localName === 'svg' || el.localName === 'math') return true;
-  const text = el.textContent ?? '';
+  const text = knownText ?? el.textContent ?? '';
   if (!/\S/.test(text)) return true; // 图标、空 span
   if ((el.tagName === 'SUP' || el.tagName === 'A') && FOOTNOTE_RE.test(text)) return true;
   return false;

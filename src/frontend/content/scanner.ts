@@ -48,6 +48,7 @@ export function splitAtBreaks(nodes: Node[]): Node[][] {
   if (!nodes.some(isBr)) return [nodes];
   const groups: Node[][] = [];
   let cur: Node[] = [];
+  let lineStart = 0;
   const textOf = (ns: Node[]) => ns.map((n) => n.textContent ?? '').join('');
   for (let i = 0; i < nodes.length; ) {
     if (!isBr(nodes[i])) {
@@ -60,12 +61,16 @@ export function splitAtBreaks(nodes: Node[]): Node[][] {
       if (isBr(nodes[j])) brs++;
       j++;
     }
-    const before = textOf(cur).trim();
+    // 前面软换行的位置已经检查过句末，若当时有标点就已经分段。只读刚走过的一行。
+    const before = textOf(nodes.slice(lineStart, i)).trimEnd();
     const after = textOf(nodes.slice(j, j + 3));
     if (cur.length && (brs >= 2 || END_PUNCT.test(before) || ITEM_START.test(after))) {
       groups.push(cur);
       cur = [];
-    } else if (cur.length) cur.push(...nodes.slice(i, j));
+    } else if (cur.length) {
+      for (let k = i; k < j; k++) cur.push(nodes[k]);
+    }
+    lineStart = j;
     i = j;
   }
   if (cur.length) groups.push(cur);
@@ -73,72 +78,82 @@ export function splitAtBreaks(nodes: Node[]): Node[][] {
   return real.length > 1 ? real : [nodes];
 }
 
-export function scan(root: Element, opts: ScanOptions): UnitSpec[] {
-  const out: UnitSpec[] = [];
-  const excludeSel = opts.exclude?.length ? opts.exclude.join(',') : '';
+export function hasBlockChild(el: Element): boolean {
+  for (const child of el.children) {
+    if (!isSkipped(child) && !isInlineFlow(child)) return true;
+  }
+  return false;
+}
 
-  const visit = (el: Element) => {
-    if (isSkipped(el) || opts.claimed(el)) return;
-    if (excludeSel && el.matches(excludeSel)) return;
+/** 每遇到一个子树或段落就交还控制权；调用方可以在节点之间暂停。 */
+export function* scanSteps(root: Element, opts: ScanOptions): Generator<UnitSpec | null> {
+  const excludeSel = opts.exclude?.join(',') ?? '';
+  type ScanItem = Element | UnitSpec;
+
+  function* visit(el: Element): Generator<ScanItem> {
+    if (isSkipped(el) || opts.claimed(el) || (excludeSel && el.matches(excludeSel))) return;
     const f = opts.filter ? opts.filter(el) : 2;
     if (f === 0) return;
-    const children = el.childNodes;
-    let hasBlock = false;
-    for (let i = 0; i < children.length; i++) {
-      const c = children[i];
-      if (c.nodeType === 1 && !isOurs(c) && !isSkipped(c as Element) && !isInlineFlow(c as Element)) {
-        hasBlock = true;
-        break;
-      }
-    }
-    if (!hasBlock) {
-      const nodes = Array.from(children).filter((n) => !isOurs(n));
+    // 扫描可跨多个浏览器任务；快照不会因中途插入译文或网页删除兄弟节点而错位。
+    const children = Array.from(el.childNodes);
+    if (!hasBlockChild(el)) {
+      const nodes = children.filter((n) => !isOurs(n));
       if (f !== 2 || !meaningful(nodes)) return;
-      // 用 <br> 分成好几段的块（很多论坛、课程网站的正文就是这样）：每一段后面跟自己的译文
       const parts = splitAtBreaks(nodes);
-      if (parts.length > 1) for (const p of parts) out.push({ root: el, nodes: p, whole: false });
-      else out.push({ root: el, nodes, whole: true });
+      for (const part of parts) {
+        if (!part.some(opts.claimed)) yield { root: el, nodes: part, whole: parts.length === 1 };
+      }
       return;
     }
     let run: Node[] = [];
-    const flush = () => {
+    function* flush(): Generator<UnitSpec> {
       if (f === 2 && run.length && meaningful(run) && !run.some(opts.claimed)) {
-        for (const p of splitAtBreaks(run)) out.push({ root: el, nodes: p, whole: false });
+        for (const nodes of splitAtBreaks(run)) yield { root: el, nodes, whole: false };
       }
       run = [];
-    };
-    for (let i = 0; i < children.length; i++) {
-      const c = children[i];
-      if (c.nodeType === 3) run.push(c);
-      else if (c.nodeType === 1) {
-        const ce = c as Element;
-        if (isOurs(ce)) continue;
-        if (isSkipped(ce)) {
-          flush();
-          continue;
-        }
-        if (isInlineFlow(ce)) run.push(ce);
+    }
+    for (const child of children) {
+      if (child.parentNode !== el) continue;
+      if (child.nodeType === 3) run.push(child);
+      else if (child.nodeType === 1) {
+        const element = child as Element;
+        if (isOurs(element)) continue;
+        if (isSkipped(element)) { yield* flush(); continue; }
+        if (isInlineFlow(element)) run.push(element);
         else {
-          flush();
-          visit(ce);
+          yield* flush();
+          yield element;
         }
       }
     }
-    flush();
-  };
+    yield* flush();
+  }
 
-  if (opts.include?.length) {
-    const seen = new Set<Element>();
-    for (const sel of opts.include) {
-      root.querySelectorAll(sel).forEach((e) => {
-        if (!seen.has(e)) {
-          seen.add(e);
-          visit(e);
-        }
-      });
+  const canEnter = (el: Element) => {
+    for (let p = el.parentElement; p; p = p.parentElement) {
+      if (isSkipped(p) || opts.claimed(p) || (excludeSel && p.matches(excludeSel))) return false;
     }
-  } else visit(root);
-  return out;
+    return true;
+  };
+  if (!canEnter(root)) return;
+  const includeSel = opts.include?.join(',');
+  const roots = includeSel && !root.closest(includeSel)
+    ? Array.from(root.querySelectorAll(includeSel)).filter(el => !el.parentElement?.closest(includeSel) && canEnter(el))
+    : [root];
+  const stack: Iterator<ScanItem>[] = [roots.values()];
+  // 用迭代器栈保留下一项的位置。深层页面不会把浏览器的调用栈填满。
+  while (stack.length) {
+    const next = stack[stack.length - 1].next();
+    if (next.done) { stack.pop(); continue; }
+    if ('nodeType' in next.value) {
+      stack.push(visit(next.value));
+      yield null;
+    } else yield next.value;
+  }
+}
+
+export function scan(root: Element, opts: ScanOptions): UnitSpec[] {
+  return Array.from(scanSteps(root, opts)).filter((unit): unit is UnitSpec => unit !== null);
 }
 
 /* ------------------------------------------------------------------ */

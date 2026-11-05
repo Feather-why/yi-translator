@@ -39,7 +39,9 @@ interface Spinner {
 }
 
 const spinners = new Map<Element, Spinner>();
-const visible = new WeakSet<Element>();
+const visible = new Set<Element>();
+// 密集表格只轮流更新可见的等待提示，给本轮输入和布局留出时间。
+const SPINNERS_PER_TICK = 32;
 let io: IntersectionObserver | null = null;
 let timer = 0;
 
@@ -52,25 +54,37 @@ function rand(pool: string, n: number): string {
 function observer(): IntersectionObserver {
   if (!io) {
     io = new IntersectionObserver((entries) => {
+      const wasIdle = !visible.size;
       for (const e of entries) {
-        if (e.isIntersecting) visible.add(e.target);
+        if (e.isIntersecting && spinners.has(e.target)) visible.add(e.target);
         else visible.delete(e.target);
+      }
+      if (wasIdle && visible.size) {
+        clearTimeout(timer);
+        timer = window.setTimeout(tick, 70);
       }
     });
   }
   return io;
 }
 
+let lastSweep = 0;
 function tick() {
-  for (const [el, sp] of spinners) {
-    if (!el.isConnected) {
-      spinners.delete(el);
-      io?.unobserve(el);
-      continue;
-    }
-    if (visible.has(el)) sp.node.data = rand(sp.pool, sp.len);
+  const now = performance.now();
+  if (now - lastSweep >= 1000) {
+    lastSweep = now;
+    for (const el of spinners.keys()) if (!el.isConnected) stopScramble(el);
   }
-  timer = spinners.size ? window.setTimeout(tick, 70) : 0;
+  const count = Math.min(visible.size, SPINNERS_PER_TICK);
+  for (let i = 0; i < count; i++) {
+    const el = visible.values().next().value!;
+    visible.delete(el);
+    const sp = spinners.get(el);
+    if (!sp || !el.isConnected) { stopScramble(el); continue; }
+    sp.node.data = rand(sp.pool, sp.len);
+    visible.add(el);
+  }
+  timer = spinners.size ? window.setTimeout(tick, visible.size ? 70 : 1000) : 0;
 }
 
 /**
@@ -93,6 +107,7 @@ export function startScramble(el: HTMLElement, len: number, lang: string): void 
 }
 
 export function stopScramble(el: Element): void {
+  visible.delete(el);
   if (spinners.delete(el)) io?.unobserve(el);
   el.removeAttribute('aria-busy');
 }
@@ -110,7 +125,11 @@ interface Reveal {
   pool: string;
 }
 
+// 装饰动画共享每帧的字符预算。超出预算时保留已经排好的完整译文和链接。
+const MAX_REVEAL_CHARS = 4096;
+const MAX_REVEALS = 24;
 const reveals = new Map<Element, Reveal>();
+let revealChars = 0;
 let raf = 0;
 
 function frame(now: number) {
@@ -118,6 +137,7 @@ function frame(now: number) {
     const p = (now - r.t0) / r.dur;
     if (p >= 1 || !el.isConnected) {
       for (const n of r.nodes) n.node.data = n.final;
+      revealChars -= r.total;
       reveals.delete(el);
       continue;
     }
@@ -141,19 +161,25 @@ function frame(now: number) {
  */
 export function revealText(el: HTMLElement, lang: string, dur = 140): void {
   stopScramble(el);
-  if (!scrambleEnabled) return;
+  const previous = reveals.get(el);
+  if (previous) { revealChars -= previous.total; reveals.delete(el); }
+  if (!scrambleEnabled || document.hidden || !el.isConnected || reveals.size >= MAX_REVEALS) return;
+  const budget = MAX_REVEAL_CHARS - revealChars;
   const pool = poolFor(lang);
   const nodes: Reveal['nodes'] = [];
   let total = 0;
   const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
   for (let n = walker.nextNode() as Text | null; n; n = walker.nextNode() as Text | null) {
-    if (!n.data.trim() || n.parentElement?.closest(SKIP_REVEAL)) continue;
+    if (n.parentElement?.closest(SKIP_REVEAL)) continue;
+    if (n.length > budget - total) return;
+    if (!n.data.trim()) continue;
     nodes.push({ node: n, final: n.data, start: total });
     total += n.data.length;
   }
   if (!total) return;
   // 定格要快：读者在等的是译文，不是动画。字多时略长一点，最长 0.26 秒
   const d = Math.min(dur + total * 0.6, 260);
+  revealChars += total;
   reveals.set(el, { nodes, total, t0: performance.now(), dur: d, pool });
   if (!raf) raf = requestAnimationFrame(frame);
 }
@@ -163,5 +189,6 @@ export function finishReveal(el: Element): void {
   const r = reveals.get(el);
   if (!r) return;
   for (const n of r.nodes) n.node.data = n.final;
+  revealChars -= r.total;
   reveals.delete(el);
 }

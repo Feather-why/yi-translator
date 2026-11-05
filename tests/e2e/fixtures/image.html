@@ -1,3 +1,12 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><title>Image test</title>
-<style>body{font-family:Georgia,serif;max-width:760px;margin:40px auto;color:#222} img{display:block;width:720px;border-radius:8px}</style></head>
-<body><h1>Image translation test</h1><p>The banner below contains English text drawn into the pixels.</p><img id="sign" src="sign.png" alt="banner"><p>Text after the image.</p></body></html>
+<style>
+body{font-family:Georgia,serif;max-width:760px;margin:40px auto;color:#222}
+.photo{position:relative;width:fit-content} img{display:block;width:720px;border-radius:8px}
+.photo button{position:absolute;top:4px;right:4px;width:44px;height:38px}
+#details{left:4px;right:auto}
+</style></head>
+<body><h1>Image translation test</h1><p>The banner below contains English text drawn into the pixels.</p>
+<div class="photo"><img id="sign" src="sign.png" alt="banner">
+<button id="expand" onclick="this.dataset.clicked='yes'">Open</button>
+<button id="details" hidden onclick="this.dataset.clicked='yes'">Info</button></div>
+<p>Text after the image.</p></body></html>

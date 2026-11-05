@@ -13,7 +13,8 @@ const extension=path.resolve(process.env.EXT_DIR||path.join(root,'.output/chrome
 const output=path.resolve(process.env.REPORT_DIR||path.join(root,'work/media-reader-049'));
 assert.ok(process.env.OCR_MODEL_CACHE,'必须提供本机已有 OCR 权重，测试不会下载');
 const manifest=JSON.parse(await readFile(path.join(extension,'manifest.json'),'utf8'));
-assert.equal(manifest.version,'0.2.13');
+const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
+assert.equal(manifest.version, pkg.version);
 await mkdir(output,{recursive:true});
 const tmp=await realpath(os.tmpdir()),profile=await mkdtemp(path.join(tmp,'translate-media-049-'));
 const files=new Map();let fail=false,delay=0,requests=0,context;

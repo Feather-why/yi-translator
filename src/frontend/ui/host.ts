@@ -47,8 +47,20 @@ export class UiHost {
     this.root.appendChild(this.layer);
     this.attach();
     // 有些单页应用会整体替换 <body>，我们挂在 <html> 下，并在被移除时挂回去
+    let repairTimer = 0;
+    let lastRepair = -Infinity;
+    let delay = 0;
     new MutationObserver(() => {
-      if (!this.host.isConnected) this.attach();
+      if (this.host.isConnected || repairTimer) return;
+      // 菜单清理浮层时可能移除我们刚挂回的节点。让出当前任务，让浏览器先处理输入和绘制。
+      // 连续移除时逐步退避，偶发替换则在下一个任务恢复。
+      delay = performance.now() - lastRepair < 5000 ? Math.min(2000, Math.max(100, delay * 2)) : 0;
+      repairTimer = window.setTimeout(() => {
+        repairTimer = 0;
+        if (this.host.isConnected) return;
+        lastRepair = performance.now();
+        this.attach();
+      }, delay);
     }).observe(document.documentElement, { childList: true });
     this.watchTheme();
   }

@@ -367,7 +367,31 @@ export class Ball {
     if (!this.dragging) this.place();
   }
 
+  private progressFrame = 0;
+  private pendingProgress?: Progress;
+  private disconnected = false;
+
   setProgress(p: Progress): void {
+    if (this.disconnected) return;
+    if (!p.active) {
+      cancelAnimationFrame(this.progressFrame);
+      this.progressFrame = 0;
+      this.pendingProgress = undefined;
+      this.paintProgress(p);
+      return;
+    }
+    // 一帧内可以收到许多快速/最终结果。状态栏只需画用户下一帧能看到的最新进度。
+    this.pendingProgress = p;
+    if (this.progressFrame) return;
+    this.progressFrame = requestAnimationFrame(() => {
+      this.progressFrame = 0;
+      const latest = this.pendingProgress;
+      this.pendingProgress = undefined;
+      if (latest) this.paintProgress(latest);
+    });
+  }
+
+  private paintProgress(p: Progress): void {
     const ratio = p.active && p.total ? p.done / p.total : 0;
     const failed = !!(p.active && p.errors && p.lastError);
     const state = !p.active ? 'idle' : failed ? 'error' : p.total && p.done >= p.total ? 'done' : 'busy';
@@ -432,6 +456,10 @@ export class Ball {
   }
 
   setDead(): void {
+    this.disconnected = true;
+    cancelAnimationFrame(this.progressFrame);
+    this.progressFrame = 0;
+    this.pendingProgress = undefined;
     this.ball.classList.add('dead');
     this.ball.title = L('扩展已更新，请刷新页面', 'Extension updated — please reload the page');
     this.pageLine.replaceChildren(h('b', null, L('扩展已更新', 'Extension updated')), h('span', null, L('请刷新页面后再用', 'Reload the page to keep using it')));
